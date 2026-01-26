@@ -1,0 +1,21 @@
+{
+  "name": "kb-12-oap",
+  "version": "0.0.1",
+  "engines": { "node": ">=24" },
+  "description": "1 course app",
+  "homepage": "https://gitlab.com/sergiy-ilchuk/kb-12-oap#readme",
+  "bugs": {
+    "url": "https://gitlab.com/sergiy-ilchuk/kb-12-oap/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@gitlab.com/sergiy-ilchuk/kb-12-oap.git"
+  },
+  "license": "MIT",
+  "author": "sergiy-ilchuk",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
