@@ -10,7 +10,7 @@
 
 <body>
   <header class="container">
-    <h1>Сервіс: Менеджер заявок на доступ до лабораторії</h1>
+    <h1>Менеджер заявок на доступ до лабораторії</h1>
     <p class="muted">
       ЛР1: CRUD-мінімум для сутності <strong>Users</strong>.
     </p>
@@ -81,6 +81,30 @@
 
       <p class="muted">
         (У наступних кроках тут буде js: localStorage, валідація, submit/click, ререндер.)
+      </p>
+    </section>
+
+    <section class="card" id="list-section" aria-live="polite">
+      <h2>Список користувачів</h2>
+
+      <table id="usersTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Ім’я</th>
+            <th>Email</th>
+            <th>Роль</th>
+            <th>Коментар</th>
+            <th>Дії</th>
+          </tr>
+        </thead>
+        <tbody id="usersTableBody">
+          <!-- Рядки додасть JS у наступних кроках -->
+        </tbody>
+      </table>
+
+      <p class="muted" id="emptyState">
+        Поки що немає записів. Додайте першого користувача.
       </p>
     </section>
 
