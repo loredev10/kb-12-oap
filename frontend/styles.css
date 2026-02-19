@@ -61,3 +61,18 @@ background: #eee;
 #statusText {
   font-weight: bold;
 }
+.hidden {
+display: none;
+}
+.is-invalid {
+  border-color: #b00020;
+  outline: none;
+}
+.row-btn {
+  width: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.row-btn:disabled {
+  opacity: 0.5;
+}
