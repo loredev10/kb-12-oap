@@ -8,6 +8,14 @@
   <script src="main.js" defer></script>
 </head>
 
+<div id="confirmPopover" class="confirm-popover" hidden>
+  <span class="confirm-text">Видалити запис?</span>
+  <div class="confirm-actions">
+    <button type="button" class="confirm-btn" data-confirm="yes" title="Підтвердити">Ок</button>
+    <button type="button" class="confirm-btn" data-confirm="no" title="Скасувати">Не ок</button>
+  </div>
+</div>
+
 <body>
   <header class="container">
     <h1>Менеджер заявок на доступ до лабораторії</h1>
@@ -78,10 +86,6 @@
           <button type="button" id="resetBtn">Очистити</button>
         </div>
       </form>
-
-      <p class="muted">
-        (У наступних кроках тут буде js: localStorage, валідація, submit/click, ререндер.)
-      </p>
     </section>
 
     <section class="card" id="list-section" aria-live="polite">
@@ -99,7 +103,6 @@
           </tr>
         </thead>
         <tbody id="usersTableBody">
-          <!-- Рядки додасть JS у наступних кроках -->
         </tbody>
       </table>
 
