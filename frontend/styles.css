@@ -76,3 +76,38 @@ display: none;
 .row-btn:disabled {
   opacity: 0.5;
 }
+
+main.container {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+
+  container-type: inline-size;
+  container-name: layout;
+}
+
+#create-section,
+#list-section {
+  margin: 0;
+}
+
+#create-section {
+  flex: 0 0 360px;
+  max-width: 420px;
+}
+
+#list-section {
+  flex: 1 1 auto;
+}
+
+@media (max-width: 1200px) {
+  main.container {
+    flex-direction: column;
+  }
+
+  #create-section,
+  #list-section {
+    width: 100%;
+    max-width: none;
+  }
+}
