@@ -1,79 +1,230 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
 body {
-  margin: 0;
+font-family: Arial, sans-serif;
+font-size: 16px;
+background: #f5f5f5;
+margin: 24px;
+}
+.container {
+max-width: 900px;
+margin: 0 auto;
+padding: 16px;
+}
+section {
+background: #fff;
+padding: 12px;
+border: 1px solid #ccc;
+border-radius: 6px;
+margin-bottom: 16px;
+}
+.field {
+margin-bottom: 12px;
+}
+.field label {
+display: block;
+margin-bottom: 4px;
+}
+.field input,
+.field select,
+.field textarea {
+width: 100%;
+padding: 8px;
+border: 1px solid #bbb;
+border-radius: 4px;
+box-sizing: border-box;
+}
+.invalid {
+border-color: #c00;
+}
+.error-text {
+margin: 4px 0 0;
+font-size: 12px;
+color: #c00;
+min-height: 14px;
+}
+.buttons {
+padding: 6px 10px;
+margin-top: 12px;
+display: flex;
+gap: 8px;
+}
+table {
+width: 100%;
+border-collapse: collapse;
+}
+th, td {
+border: 1px solid #ccc;
+padding: 8px;
+}
+th {
+background: #eee;
+}
+#statusText {
+  font-weight: bold;
+}
+[hidden] {
+  display: none !important;
+}
+.is-invalid {
+  border: 1px solid #b00020 !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
+}
+.row-btn {
+  width: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+.row-btn:disabled {
+  opacity: 0.5;
+}
+
+main.container {
   display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+  gap: 16px;
+  align-items: flex-start;
+
+  container-type: inline-size;
+  container-name: layout;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+#create-section,
+#list-section {
+  margin: 0;
 }
 
-.card {
-  padding: 2em;
+#create-section {
+  flex: 0 0 360px;
+  max-width: 420px;
 }
 
-#app {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+#list-section {
+  flex: 1 1 auto;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+@media (max-width: 1200px) {
+  main.container {
+    flex-direction: column;
+  }
+
+  #create-section,
+  #list-section {
+    width: 100%;
+    max-width: none;
+  }
+}
+.confirm-popover {
+  position: absolute;
+  z-index: 9999;
+  background: #fff;
+  border: 1px solid #e6e8ee;
+  border-radius: 12px;
+  padding: 10px 12px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.12);
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.confirm-text {
+  font-size: 14px;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.confirm-btn {
+  width: auto;
+  padding: 6px 10px;
+  border-radius: 10px;
+}
+
+.confirm-btn[data-confirm="yes"] {
+  border-color: #1b7f3a;
+}
+
+.confirm-btn[data-confirm="no"] {
+  border-color: #b00020;
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.control {
+  flex: 1 1 240px;
+}
+
+.control-btn {
+  flex: 0 0 auto;
+}
+
+.control label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.role-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #cfd6e4;
+  border-radius: 10px;
   cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  user-select: none;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.role-option input {
+  margin: 0;
+}
+
+.role-option:has(input:checked) {
+  border-color: #111;
+}
+
+.role-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.role-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #cfd6e4;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-option:has(input[type="radio"]:checked) {
+  border-color: #111;
+}
+
+.role-option:has(input[type="radio"]:focus-visible) {
+  outline: 2px solid #111;
+  outline-offset: 2px;
 }
