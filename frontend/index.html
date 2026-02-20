@@ -89,6 +89,27 @@
     </section>
 
     <section class="card" id="list-section" aria-live="polite">
+      <div class="controls">
+        <div class="control">
+          <label for="searchInput">Пошук (ім’я або email)</label>
+          <input id="searchInput" type="text" placeholder="Введіть текст..." />
+        </div>
+
+        <div class="control">
+          <label for="roleFilter">Фільтр за роллю</label>
+          <select id="roleFilter">
+            <option value="">Оберіть роль</option>
+            <option value="Студент">Студент</option>
+            <option value="Викладач">Викладач</option>
+            <option value="Гість">Гість</option>
+          </select>
+        </div>
+
+        <div class="control control-btn">
+          <button type="button" id="clearFiltersBtn">Скинути</button>
+        </div>
+      </div>
+
       <h2>Список користувачів</h2>
 
       <table id="usersTable">

@@ -5,6 +5,7 @@ const STORAGE_KEY = "lab1_users_v1";
 let users = [];
 let nextId = 1;
 let editId = null;
+let filters = { search: "", role: "" };
 
 // ====== DOM ======
 let form, submitBtn, resetBtn;
@@ -13,7 +14,7 @@ let fullNameError, emailError, roleError, notesError;
 let tableBody, emptyState;
 let confirmPopover;
 let pendingDeleteId = null;
-let pendingDeleteBtn = null;
+let searchInput, roleFilter, clearFiltersBtn;
 
 // ====== ENTRY POINT ======
 init();
@@ -38,26 +39,53 @@ function init() {
 
   confirmPopover = document.getElementById("confirmPopover");
 
+  searchInput = document.getElementById("searchInput");
+  roleFilter = document.getElementById("roleFilter");
+  clearFiltersBtn = document.getElementById("clearFiltersBtn");
+
   form.addEventListener("submit", onSubmit);
   resetBtn.addEventListener("click", onReset);
   tableBody.addEventListener("click", onTableClick);
 
   confirmPopover.addEventListener("click", onConfirmClick);
+  confirmPopover.addEventListener("click", e => e.stopPropagation());
   document.addEventListener("click", onDocumentClick);
   window.addEventListener("scroll", hideConfirmPopover, true);
   window.addEventListener("resize", hideConfirmPopover);
 
+  searchInput.addEventListener("input", onSearchInput);
+  roleFilter.addEventListener("change", onRoleChange);
+  clearFiltersBtn.addEventListener("click", onClearFilters);
+
   loadFromStorage();
-
   nextId = computeNextId(users);
+  render();
+}
 
+function onSearchInput() {
+  filters.search = searchInput.value;
+  render();
+}
+
+function onRoleChange() {
+  filters.role = roleFilter.value;
+  render();
+}
+
+function onClearFilters() {
+  filters.search = "";
+  filters.role = "";
+  searchInput.value = "";
+  roleFilter.value = "";
   render();
 }
 
 function onReset() {
   form.reset();
   clearErrors();
+  editId = null;
   setSubmitLabel("Додати");
+  hideConfirmPopover();
 }
 
 function onSubmit(event) {
@@ -95,9 +123,12 @@ function onTableClick(event) {
   const action = btn.dataset.action;
 
   if (action === "delete") {
+    event.stopPropagation();
     showDeleteConfirm(id, btn);
     return;
-  } else if (action === "edit") {
+  }
+
+  if (action === "edit") {
     onEdit(id);
   }
 }
@@ -129,8 +160,7 @@ function onEdit(id) {
 
   clearErrors();
   setSubmitLabel("Зберегти");
-
-  // UX: прокрутити до форми
+  hideConfirmPopover();
   fullNameInput.focus();
 }
 
@@ -151,7 +181,6 @@ function updateUser(id, dto) {
 
 function showDeleteConfirm(id, buttonEl) {
   pendingDeleteId = id;
-  pendingDeleteBtn = buttonEl;
 
   // позиціонуємо біля кнопки
   const rect = buttonEl.getBoundingClientRect();
@@ -166,10 +195,11 @@ function showDeleteConfirm(id, buttonEl) {
 function hideConfirmPopover() {
   confirmPopover.hidden = true;
   pendingDeleteId = null;
-  pendingDeleteBtn = null;
 }
 
 function onConfirmClick(event) {
+  event.stopPropagation();
+
   const btn = event.target.closest("button[data-confirm]");
   if (!btn) return;
 
@@ -194,6 +224,24 @@ function onDocumentClick(event) {
 
   // будь-який інший клік — сховати
   hideConfirmPopover();
+}
+
+function applyFilters(items, filters) {
+  let result = items;
+
+  const q = filters.search.trim().toLowerCase();
+  if (q) {
+    result = result.filter(u => {
+      const hay = `${u.fullName} ${u.email}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+  if (filters.role) {
+    result = result.filter(u => u.role === filters.role);
+  }
+
+  return result;
 }
 
 function readForm() {
@@ -253,15 +301,12 @@ function addUser(dto) {
 }
 
 function render() {
-  // empty state
-  if (users.length === 0) {
-    emptyState.hidden = false;
-  } else {
-    emptyState.hidden = true;
-  }
+  const filteredUsers = applyFilters(users, filters);
+
+  emptyState.hidden = filteredUsers.length !== 0;
 
   // render rows
-  tableBody.innerHTML = users
+  tableBody.innerHTML = filteredUsers
     .map((u, idx) => {
       const notes = escapeHtml(u.notes || "");
       return `

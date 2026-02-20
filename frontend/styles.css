@@ -146,3 +146,25 @@ main.container {
 .confirm-btn[data-confirm="no"] {
   border-color: #b00020;
 }
+
+.controls {
+  display: flex;
+  gap: 12px;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.control {
+  flex: 1 1 240px;
+}
+
+.control-btn {
+  flex: 0 0 auto;
+}
+
+.control label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
