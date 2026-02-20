@@ -168,3 +168,68 @@ main.container {
   font-weight: 600;
   margin-bottom: 6px;
 }
+.label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.role-options {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.role-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid #cfd6e4;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-option input {
+  margin: 0;
+}
+
+.role-option:has(input:checked) {
+  border-color: #111;
+}
+
+.role-options.is-invalid {
+  border: 1px solid #b00020;
+  border-radius: 10px;
+  padding: 6px;
+}
+
+.role-option input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  pointer-events: none;
+}
+
+.role-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 10px;
+  border: 1px solid #cfd6e4;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.role-option:has(input[type="radio"]:checked) {
+  border-color: #111;
+}
+
+.role-option:has(input[type="radio"]:focus-visible) {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}

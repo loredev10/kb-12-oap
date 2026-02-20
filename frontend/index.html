@@ -59,13 +59,21 @@
         </div>
 
         <div class="field">
-          <label for="roleSelect">Роль</label>
-          <select id="roleSelect" name="role" required>
-            <option value="">Оберіть роль</option>
-            <option value="Студент">Студент</option>
-            <option value="Викладач">Викладач</option>
-            <option value="Гість">Гість</option>
-          </select>
+          <span class="label">Роль</span>
+          <div class="role-options" id="roleOptions" role="radiogroup" aria-label="Роль">
+            <label class="role-option">
+              <input type="radio" name="role" value="Студент" />
+              <span>Студент</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="Викладач" />
+              <span>Викладач</span>
+            </label>
+            <label class="role-option">
+              <input type="radio" name="role" value="Гість" />
+              <span>Гість</span>
+            </label>
+          </div>
           <p class="error-text" id="roleError"></p>
         </div>
 

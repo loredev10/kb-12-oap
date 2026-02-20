@@ -9,7 +9,7 @@ let filters = { search: "", role: "" };
 
 // ====== DOM ======
 let form, submitBtn, resetBtn;
-let fullNameInput, emailInput, roleSelect, notesInput;
+let fullNameInput, emailInput, roleOptions, notesInput;
 let fullNameError, emailError, roleError, notesError;
 let tableBody, emptyState;
 let confirmPopover;
@@ -26,7 +26,7 @@ function init() {
 
   fullNameInput = document.getElementById("fullNameInput");
   emailInput = document.getElementById("emailInput");
-  roleSelect = document.getElementById("roleSelect");
+  roleOptions = document.getElementById("roleOptions");
   notesInput = document.getElementById("notesInput");
 
   fullNameError = document.getElementById("fullNameError");
@@ -155,7 +155,9 @@ function onEdit(id) {
 
   fullNameInput.value = user.fullName;
   emailInput.value = user.email;
-  roleSelect.value = user.role;
+  document.querySelectorAll('input[name="role"]').forEach(r => {
+    r.checked = (r.value === user.role);
+  });
   notesInput.value = user.notes || "";
 
   clearErrors();
@@ -245,10 +247,12 @@ function applyFilters(items, filters) {
 }
 
 function readForm() {
+  const selectedRole = document.querySelector('input[name="role"]:checked');
+
   return {
     fullName: fullNameInput.value,
     email: emailInput.value,
-    role: roleSelect.value,
+    role: selectedRole ? selectedRole.value : "",
     notes: notesInput.value
   };
 }
@@ -276,7 +280,7 @@ function validate(dto) {
   }
 
   if (dto.role === "") {
-    showError(roleSelect, roleError, "Оберіть значення зі списку.");
+    showError(roleOptions, roleError, "Оберіть роль.");
     isValid = false;
   }
 
@@ -356,7 +360,7 @@ function computeNextId(items) {
 function clearErrors() {
   clearFieldError(fullNameInput, fullNameError);
   clearFieldError(emailInput, emailError);
-  clearFieldError(roleSelect, roleError);
+  clearFieldError(roleOptions, roleError);
   clearFieldError(notesInput, notesError);
 }
 
