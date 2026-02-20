@@ -3,16 +3,4 @@
 My course monorepo. I'll build this app step by step.
 
 ## Requirements
-- Node.js LTS (see `.nvmrc`)
-
-### Node version manager
-Any manager (fnm/nvm/asdf). Example with fnm:
-- `fnm use`
-
-## Structure
-- `frontend/` — UI
-- `backend/` — API
-- `README.md`
-
-## License
-MIT
+npm create vite@latest svelte-frontend -- --template svelte
