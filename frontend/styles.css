@@ -65,8 +65,9 @@ background: #eee;
   display: none !important;
 }
 .is-invalid {
-  border-color: #b00020;
-  outline: none;
+  border: 1px solid #b00020 !important;
+  border-radius: 10px !important;
+  padding: 6px !important;
 }
 .row-btn {
   width: auto;
@@ -197,12 +198,6 @@ main.container {
 
 .role-option:has(input:checked) {
   border-color: #111;
-}
-
-.role-options.is-invalid {
-  border: 1px solid #b00020;
-  border-radius: 10px;
-  padding: 6px;
 }
 
 .role-option input[type="radio"] {
