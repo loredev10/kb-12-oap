@@ -6,8 +6,25 @@
 
   const STORAGE_KEY = "lab1_users_v1";
 
-  let users = $state([]);
-  let nextId = $state(1);
+  function loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }
+
+  function computeNextId(items) {
+    if (!Array.isArray(items) || items.length === 0) return 1;
+    const maxId = Math.max(...items.map(x => Number(x.id) || 0));
+    return maxId + 1;
+  }
+
+  let users = $state(typeof localStorage !== "undefined" ? loadFromStorage() : []);
+  let nextId = $state(computeNextId(users));
   let editId = $state(null);
 
   let form = $state({ fullName: "", email: "", role: "", notes: "" });
@@ -24,33 +41,14 @@
 
   let focusTick = $state(0);
 
-  function computeNextId(items) {
-    if (!Array.isArray(items) || items.length === 0) return 1;
-    const maxId = Math.max(...items.map(x => Number(x.id) || 0));
-    return maxId + 1;
-  }
-
-  function loadFromStorage() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
-  }
-
   function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   }
 
-  users = typeof localStorage !== "undefined" ? loadFromStorage() : [];
-  nextId = computeNextId(users);
-
   $effect(() => {
     if (typeof localStorage === "undefined") return;
-    saveToStorage();
+    users; // dependency
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
   });
 
   function isValidEmail(value) {
@@ -132,7 +130,7 @@
     });
   }
 
-  const viewUsers = $derived(() => applySort(applyFilters(users, filters), sort));
+  let viewUsers = $derived(applySort(applyFilters(users, filters), sort));
 
   function setSort(key) {
     if (sort.key === key) sort = { ...sort, dir: sort.dir === "asc" ? "desc" : "asc" };
@@ -168,6 +166,7 @@
           role: dto.role,
           notes: dto.notes.trim()
         };
+        users = [...users];
       }
       editId = null;
     } else {

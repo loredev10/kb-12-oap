@@ -1,6 +1,9 @@
 # kb-12 OAP My Course App
 
-My course monorepo. I'll build this app step by step.
+My course monorepo. Vite + Svelte variant.
 
-## Requirements
+## Run
 npm create vite@latest svelte-frontend -- --template svelte
+
+cd svelte-frontend/
+npm run dev
