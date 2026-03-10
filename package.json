@@ -1,7 +1,10 @@
 {
   "name": "kb-12-oap",
-  "version": "0.0.1",
-  "engines": { "node": ">=24" },
+  "version": "0.2.0",
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.32.1",
   "description": "1 course app",
   "homepage": "https://gitlab.com/sergiy-ilchuk/kb-12-oap#readme",
   "bugs": {
@@ -13,9 +16,27 @@
   },
   "license": "MIT",
   "author": "sergiy-ilchuk",
-  "type": "commonjs",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "tsx watch backend/src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "lint": "eslint .",
+    "format": "prettier -w ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.5.0",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.1",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.1"
+  },
+  "dependencies": {
+    "express": "^5.2.1"
   }
 }

@@ -48,7 +48,7 @@ function init() {
   tableBody.addEventListener("click", onTableClick);
 
   confirmPopover.addEventListener("click", onConfirmClick);
-  confirmPopover.addEventListener("click", e => e.stopPropagation());
+  confirmPopover.addEventListener("click", (e) => e.stopPropagation());
   document.addEventListener("click", onDocumentClick);
   window.addEventListener("scroll", hideConfirmPopover, true);
   window.addEventListener("resize", hideConfirmPopover);
@@ -141,22 +141,22 @@ function onDelete(id) {
     setSubmitLabel("Додати");
   }
 
-  users = users.filter(u => u.id !== id);
+  users = users.filter((u) => u.id !== id);
   saveToStorage();
   nextId = computeNextId(users);
   render();
 }
 
 function onEdit(id) {
-  const user = users.find(u => u.id === id);
+  const user = users.find((u) => u.id === id);
   if (!user) return;
 
   editId = id;
 
   fullNameInput.value = user.fullName;
   emailInput.value = user.email;
-  document.querySelectorAll('input[name="role"]').forEach(r => {
-    r.checked = (r.value === user.role);
+  document.querySelectorAll('input[name="role"]').forEach((r) => {
+    r.checked = r.value === user.role;
   });
   notesInput.value = user.notes || "";
 
@@ -167,7 +167,7 @@ function onEdit(id) {
 }
 
 function updateUser(id, dto) {
-  const idx = users.findIndex(u => u.id === id);
+  const idx = users.findIndex((u) => u.id === id);
   if (idx === -1) return false;
 
   users[idx] = {
@@ -175,7 +175,7 @@ function updateUser(id, dto) {
     fullName: dto.fullName.trim(),
     email: dto.email.trim(),
     role: dto.role,
-    notes: dto.notes.trim()
+    notes: dto.notes.trim(),
   };
 
   return true;
@@ -233,14 +233,14 @@ function applyFilters(items, filters) {
 
   const q = filters.search.trim().toLowerCase();
   if (q) {
-    result = result.filter(u => {
+    result = result.filter((u) => {
       const hay = `${u.fullName} ${u.email}`.toLowerCase();
       return hay.includes(q);
     });
   }
 
   if (filters.role) {
-    result = result.filter(u => u.role === filters.role);
+    result = result.filter((u) => u.role === filters.role);
   }
 
   return result;
@@ -253,7 +253,7 @@ function readForm() {
     fullName: fullNameInput.value,
     email: emailInput.value,
     role: selectedRole ? selectedRole.value : "",
-    notes: notesInput.value
+    notes: notesInput.value,
   };
 }
 
@@ -266,7 +266,11 @@ function validate(dto) {
     showError(fullNameInput, fullNameError, "Поле є обов’язковим.");
     isValid = false;
   } else if (name.length < 3 || name.length > 60) {
-    showError(fullNameInput, fullNameError, "Довжина має бути від 3 до 60 символів.");
+    showError(
+      fullNameInput,
+      fullNameError,
+      "Довжина має бути від 3 до 60 символів.",
+    );
     isValid = false;
   }
 
@@ -286,7 +290,11 @@ function validate(dto) {
 
   const notes = dto.notes.trim();
   if (notes !== "" && notes.length < 5) {
-    showError(notesInput, notesError, "Коментар має містити щонайменше 5 символів (або залиште порожнім).");
+    showError(
+      notesInput,
+      notesError,
+      "Коментар має містити щонайменше 5 символів (або залиште порожнім).",
+    );
     isValid = false;
   }
 
@@ -299,7 +307,7 @@ function addUser(dto) {
     fullName: dto.fullName.trim(),
     email: dto.email.trim(),
     role: dto.role,
-    notes: dto.notes.trim()
+    notes: dto.notes.trim(),
   };
   users.push(user);
 }
@@ -352,7 +360,7 @@ function loadFromStorage() {
 // не зберігати nextId, а обчислити
 function computeNextId(items) {
   if (!Array.isArray(items) || items.length === 0) return 1;
-  const maxId = Math.max(...items.map(x => Number(x.id) || 0));
+  const maxId = Math.max(...items.map((x) => Number(x.id) || 0));
   return maxId + 1;
 }
 
