@@ -1,15 +1,8 @@
-# kb-12 OAP My Course App
+# Backend
 
-My course monorepo. I build this app step by step.
+Backend part of the course app.
 
-## Overview
-
-This repository contains two parts:
-
-- `frontend/` — simple client-side part
-- `backend/` — backend API built with Express and TypeScript
-
-At this stage, the backend is configured with:
+## Stack
 
 - Express
 - TypeScript
@@ -17,76 +10,61 @@ At this stage, the backend is configured with:
 - ESLint
 - Prettier
 
+## Entry point
+
+- `src/index.ts`
+
 ## Requirements
 
-- Node.js
-- fnm, nvm, or another Node version manager
-- Corepack enabled
-- pnpm
-
-Use the Node.js version from `.nvmrc`.
-
-Example with fnm:
-
-- `fnm use`
-
-Enable Corepack once on your machine:
-
-- `corepack enable`
-
-Activate the required pnpm version:
-
-- `corepack prepare pnpm@10.32.1 --activate`
-
-Verify:
-
-- `pnpm -v`
+- Node.js (use version from root `.nvmrc`)
+- pnpm via Corepack
 
 ## Install
 
-From the repository root:
+From the `backend` directory:
 
 - `pnpm install`
 
-## Run (dev)
+## Run in development mode
 
-From the repository root:
+From the `backend` directory:
 
 - `pnpm dev`
 
-This runs:
-
-- `backend/src/index.ts`
-
 ## Build
 
-From the repository root:
+From the `backend` directory:
 
 - `pnpm build`
 
+## Start built version
+
+From the `backend` directory:
+
+- `pnpm start`
+
+TODO: verify the compiled output path used by the `start` script.
+
 ## Lint / Format
 
-From the repository root:
+From the `backend` directory:
 
-* `pnpm test`
+- `pnpm lint`
+- `pnpm format`
 
-## Lint / Format (optional)
+## Notes
 
-From the repository root:
+This backend is being developed as part of Laboratory Work #2.
 
-* `pnpm lint`
-* `pnpm format`
+Current functionality:
 
-## Structure
+- basic Express server
+- `/health` endpoint
 
-- `frontend/` — UI
-- `backend/` — API
-- `backend/src/index.ts` — backend entry point
-- `eslint.config.js` — ESLint configuration
-- `tsconfig.json` — TypeScript configuration
-- `.prettierrc.json` — Prettier configuration
-- `README.md` — project documentation
-
-## License
-
-MIT
+TODO:
+- add routes for Users
+- add routes for AccessRequests
+- add routes for Approvals
+- define DTOs
+- add validation
+- add layered structure (`routes`, `controllers`, `services`, `repositories`)
