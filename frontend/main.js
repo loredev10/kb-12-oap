@@ -1,9 +1,7 @@
-// ====== CONFIG ======
-const STORAGE_KEY = "lab1_users_v1";
+const API_BASE_URL = "/api/users";
 
 // ====== STATE ======
 let users = [];
-let nextId = 1;
 let editId = null;
 let filters = { search: "", role: "" };
 
@@ -19,7 +17,7 @@ let searchInput, roleFilter, clearFiltersBtn;
 // ====== ENTRY POINT ======
 init();
 
-function init() {
+async function init() {
   form = document.getElementById("userForm");
   submitBtn = document.getElementById("submitBtn");
   resetBtn = document.getElementById("resetBtn");
@@ -57,8 +55,13 @@ function init() {
   roleFilter.addEventListener("change", onRoleChange);
   clearFiltersBtn.addEventListener("click", onClearFilters);
 
-  loadFromStorage();
-  nextId = computeNextId(users);
+  try {
+    await loadUsers();
+  } catch (error) {
+    console.error(error);
+    alert("Не вдалося завантажити користувачів із сервера.");
+  }
+
   render();
 }
 
@@ -88,26 +91,31 @@ function onReset() {
   hideConfirmPopover();
 }
 
-function onSubmit(event) {
+async function onSubmit(event) {
   event.preventDefault();
 
   const dto = readForm();
   const isValid = validate(dto);
   if (!isValid) return;
 
-  if (editId !== null) {
-    updateUser(editId, dto);
-    editId = null;
-    setSubmitLabel("Додати");
-  } else {
-    addUser(dto);
+  try {
+    if (editId !== null) {
+      await updateUserRequest(editId, dto);
+      editId = null;
+      setSubmitLabel("Додати");
+    } else {
+      await createUserRequest(dto);
+    }
+
+    await loadUsers();
+    render();
+
+    form.reset();
+    clearErrors();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || "Не вдалося зберегти користувача.");
   }
-
-  saveToStorage();
-  render();
-
-  form.reset();
-  clearErrors();
 }
 
 function onTableClick(event) {
@@ -133,18 +141,23 @@ function onTableClick(event) {
   }
 }
 
-function onDelete(id) {
-  if (editId === id) {
-    editId = null;
-    form.reset();
-    clearErrors();
-    setSubmitLabel("Додати");
-  }
+async function onDelete(id) {
+  try {
+    await deleteUserRequest(id);
 
-  users = users.filter((u) => u.id !== id);
-  saveToStorage();
-  nextId = computeNextId(users);
-  render();
+    if (editId === id) {
+      editId = null;
+      form.reset();
+      clearErrors();
+      setSubmitLabel("Додати");
+    }
+
+    await loadUsers();
+    render();
+  } catch (error) {
+    console.error(error);
+    alert(error.message || "Не вдалося видалити користувача.");
+  }
 }
 
 function onEdit(id) {
@@ -155,9 +168,11 @@ function onEdit(id) {
 
   fullNameInput.value = user.fullName;
   emailInput.value = user.email;
+
   document.querySelectorAll('input[name="role"]').forEach((r) => {
     r.checked = r.value === user.role;
   });
+
   notesInput.value = user.notes || "";
 
   clearErrors();
@@ -166,25 +181,9 @@ function onEdit(id) {
   fullNameInput.focus();
 }
 
-function updateUser(id, dto) {
-  const idx = users.findIndex((u) => u.id === id);
-  if (idx === -1) return false;
-
-  users[idx] = {
-    ...users[idx],
-    fullName: dto.fullName.trim(),
-    email: dto.email.trim(),
-    role: dto.role,
-    notes: dto.notes.trim(),
-  };
-
-  return true;
-}
-
 function showDeleteConfirm(id, buttonEl) {
   pendingDeleteId = id;
 
-  // позиціонуємо біля кнопки
   const rect = buttonEl.getBoundingClientRect();
   const top = rect.bottom + window.scrollY + 6;
   const left = rect.left + window.scrollX;
@@ -215,23 +214,17 @@ function onConfirmClick(event) {
 }
 
 function onDocumentClick(event) {
-  // якщо попап схований — нічого
   if (confirmPopover.hidden) return;
-
-  // клік всередині попапа — ок, не ховаємо тут (обробить onConfirmClick)
   if (event.target.closest("#confirmPopover")) return;
-
-  // клік по кнопці "Видалити" — теж не ховаємо (бо ми його щойно відкрили)
   if (event.target.closest('button[data-action="delete"]')) return;
 
-  // будь-який інший клік — сховати
   hideConfirmPopover();
 }
 
-function applyFilters(items, filters) {
+function applyFilters(items, currentFilters) {
   let result = items;
 
-  const q = filters.search.trim().toLowerCase();
+  const q = currentFilters.search.trim().toLowerCase();
   if (q) {
     result = result.filter((u) => {
       const hay = `${u.fullName} ${u.email}`.toLowerCase();
@@ -239,8 +232,8 @@ function applyFilters(items, filters) {
     });
   }
 
-  if (filters.role) {
-    result = result.filter((u) => u.role === filters.role);
+  if (currentFilters.role) {
+    result = result.filter((u) => u.role === currentFilters.role);
   }
 
   return result;
@@ -301,23 +294,11 @@ function validate(dto) {
   return isValid;
 }
 
-function addUser(dto) {
-  const user = {
-    id: nextId++,
-    fullName: dto.fullName.trim(),
-    email: dto.email.trim(),
-    role: dto.role,
-    notes: dto.notes.trim(),
-  };
-  users.push(user);
-}
-
 function render() {
   const filteredUsers = applyFilters(users, filters);
 
   emptyState.hidden = filteredUsers.length !== 0;
 
-  // render rows
   tableBody.innerHTML = filteredUsers
     .map((u, idx) => {
       const notes = escapeHtml(u.notes || "");
@@ -338,30 +319,91 @@ function render() {
     .join("");
 }
 
-// ====== STORAGE ======
-function saveToStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+// ====== API ======
+async function loadUsers() {
+  const response = await fetch(API_BASE_URL);
+  const data = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    throw new Error(
+      extractErrorMessage(data, "Не вдалося завантажити список користувачів."),
+    );
+  }
+
+  users = Array.isArray(data.items) ? data.items : [];
 }
 
-function loadFromStorage() {
-  const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) {
-    users = [];
-    return;
+async function createUserRequest(dto) {
+  const response = await fetch(API_BASE_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dto),
+  });
+
+  const data = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    applyServerValidationErrors(data);
+    throw new Error(
+      extractErrorMessage(data, "Не вдалося створити користувача."),
+    );
   }
+
+  return data;
+}
+
+async function updateUserRequest(id, dto) {
+  const response = await fetch(`${API_BASE_URL}/${id}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(dto),
+  });
+
+  const data = await parseJsonSafe(response);
+
+  if (!response.ok) {
+    applyServerValidationErrors(data);
+    throw new Error(
+      extractErrorMessage(data, "Не вдалося оновити користувача."),
+    );
+  }
+
+  return data;
+}
+
+async function deleteUserRequest(id) {
+  const response = await fetch(`${API_BASE_URL}/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    const data = await parseJsonSafe(response);
+    throw new Error(
+      extractErrorMessage(data, "Не вдалося видалити користувача."),
+    );
+  }
+}
+
+async function parseJsonSafe(response) {
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!contentType.includes("application/json")) {
+    return null;
+  }
+
   try {
-    const parsed = JSON.parse(raw);
-    users = Array.isArray(parsed) ? parsed : [];
+    return await response.json();
   } catch {
-    users = [];
+    return null;
   }
 }
 
-// не зберігати nextId, а обчислити
-function computeNextId(items) {
-  if (!Array.isArray(items) || items.length === 0) return 1;
-  const maxId = Math.max(...items.map((x) => Number(x.id) || 0));
-  return maxId + 1;
+function extractErrorMessage(data, fallback) {
+  return data?.error?.message || fallback;
 }
 
 // ====== ERRORS / UX ======
@@ -384,6 +426,33 @@ function clearFieldError(inputEl, errorEl) {
 
 function setSubmitLabel(text) {
   submitBtn.textContent = text;
+}
+
+function applyServerValidationErrors(data) {
+  clearErrors();
+
+  const details = data?.error?.details;
+  if (!Array.isArray(details)) return;
+
+  details.forEach((item) => {
+    if (!item?.field || !item?.message) return;
+
+    if (item.field === "fullName") {
+      showError(fullNameInput, fullNameError, item.message);
+    }
+
+    if (item.field === "email") {
+      showError(emailInput, emailError, item.message);
+    }
+
+    if (item.field === "role") {
+      showError(roleOptions, roleError, item.message);
+    }
+
+    if (item.field === "notes") {
+      showError(notesInput, notesError, item.message);
+    }
+  });
 }
 
 // ====== HELPERS ======
