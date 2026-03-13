@@ -6,7 +6,7 @@ settings:
 
 importers:
 
-  .:
+  backend:
     dependencies:
       express:
         specifier: ^5.2.1
@@ -42,6 +42,8 @@ importers:
       typescript-eslint:
         specifier: ^8.57.1
         version: 8.57.1(eslint@10.0.3)(typescript@5.9.3)
+
+  frontend: {}
 
 packages:
 

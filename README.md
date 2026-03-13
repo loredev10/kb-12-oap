@@ -24,6 +24,78 @@ From the repository root:
 - `frontend/`
 - `backend/`
 
+## Available commands
+
+Defined in `/package.json`
+
+### Backend
+
+Run backend in development mode:
+
+- `pnpm dev:backend`
+
+Build backend:
+
+- `pnpm build:backend`
+
+Run TypeScript type checking for backend:
+
+- `pnpm type-check:backend`
+
+Start compiled backend build:
+
+- `pnpm start:backend`
+
+Check backend code with ESLint:
+
+- `pnpm lint:check:backend`
+
+Fix backend lint issues automatically:
+
+- `pnpm lint:fix:backend`
+
+Check backend formatting with Prettier:
+
+- `pnpm format:check:backend`
+
+Format backend code automatically:
+
+- `pnpm format:fix:backend`
+
+### Frontend
+
+Run frontend in development mode:
+
+- `pnpm dev:frontend`
+
+Build frontend:
+
+- `pnpm build:frontend`
+
+Run TypeScript type checking for frontend:
+
+- `pnpm type-check:frontend`
+
+Start frontend:
+
+- `pnpm start:frontend`
+
+Check frontend code with ESLint:
+
+- `pnpm lint:check:frontend`
+
+Fix frontend lint issues automatically:
+
+- `pnpm lint:fix:frontend`
+
+Check frontend formatting with Prettier:
+
+- `pnpm format:check:frontend`
+
+Format frontend code automatically:
+
+- `pnpm format:fix:frontend`
+
 ## Notes
 
 TODO:

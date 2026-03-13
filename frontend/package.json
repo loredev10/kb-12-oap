@@ -1,5 +1,5 @@
 {
-  "name": "kb-12-oap-frontend",
+  "name": "@kb-12/frontend",
   "version": "0.2.0",
   "private": true,
   "description": "Frontend part of the OAP course app",
@@ -11,7 +11,11 @@
   "scripts": {
     "dev": "echo \"TODO: add frontend dev server\"",
     "build": "echo \"TODO: add frontend build step\"",
-    "lint": "echo \"TODO: add frontend linting\"",
-    "format": "echo \"TODO: add frontend formatting\""
+    "type-check": "echo \"TODO: add frontend\"",
+    "start": "echo \"TODO: add frontend\"",
+    "lint:check": "echo \"TODO: add frontend linting\"",
+    "lint:fix": "echo \"TODO: add frontend linting\"",
+    "format:check": "echo \"TODO: add frontend formatting\"",
+    "format:fix": "echo \"TODO: add frontend formatting\""
   }
 }

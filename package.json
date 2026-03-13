@@ -1,0 +1,30 @@
+{
+  "name": "kb-12-oap",
+  "private": true,
+  "packageManager": "pnpm@10.32.1",
+  "scripts": {
+    "dev:backend": "pnpm --filter @kb-12/backend dev",
+    "dev:frontend": "pnpm --filter @kb-12/frontend dev",
+
+    "build:backend": "pnpm --filter @kb-12/backend build",
+    "build:frontend": "pnpm --filter @kb-12/frontend build",
+
+    "type-check:backend": "pnpm --filter @kb-12/backend type-check",
+    "type-check:frontend": "pnpm --filter @kb-12/frontend type-check",
+
+    "start:backend": "pnpm --filter @kb-12/backend start",
+    "start:frontend": "pnpm --filter @kb-12/frontend start",
+
+    "lint:check:backend": "pnpm --filter @kb-12/backend lint:check",
+    "lint:check:frontend": "pnpm --filter @kb-12/frontend lint:check",
+
+    "lint:fix:backend": "pnpm --filter @kb-12/backend lint:fix",
+    "lint:fix:frontend": "pnpm --filter @kb-12/frontend lint:fix",
+
+    "format:check:backend": "pnpm --filter @kb-12/backend format:check",
+    "format:check:frontend": "pnpm --filter @kb-12/frontend format:check",
+
+    "format:fix:backend": "pnpm --filter @kb-12/backend format:fix",
+    "format:fix:frontend": "pnpm --filter @kb-12/frontend format:fix"
+  }
+}

@@ -1,5 +1,5 @@
 {
-  "name": "kb-12-oap-backend",
+  "name": "@kb-12/backend",
   "version": "0.2.0",
   "private": true,
   "type": "module",
@@ -12,9 +12,12 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "type-check": "tsc -b --noEmit",
     "start": "node dist/index.js",
-    "lint": "eslint .",
-    "format": "prettier -w ."
+    "lint:check": "eslint .",
+    "lint:fix": "eslint --fix .",
+    "format:check": "prettier --check .",
+    "format:fix": "prettier --write ."
   },
   "dependencies": {
     "express": "^5.2.1"
