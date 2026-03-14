@@ -1,14 +1,29 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
-import { allocateUserId, getUsers, recomputeNextUserId } from "../data/users.store.js";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
+import {
+  allocateUserId,
+  getUsers,
+  recomputeNextUserId,
+} from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
+import { toUserResponseDto } from "../mappers/user.mapper.js";
 import type { User } from "../types/user.js";
 import { parseId } from "../utils/parse-id.js";
-import { normalizeUserDto, validateUserDto } from "../validators/user.validator.js";
+import {
+  normalizeUserDto,
+  validateUserDto,
+} from "../validators/user.validator.js";
 
 export const usersRouter = Router();
 
 usersRouter.get("/", (_req: Request, res: Response) => {
-  res.status(200).json({ items: getUsers() });
+  res.status(200).json({
+    items: getUsers().map(toUserResponseDto),
+  });
 });
 
 usersRouter.get(
@@ -22,7 +37,7 @@ usersRouter.get(
         throw new ApiError(404, "NOT_FOUND", "Користувача не знайдено.");
       }
 
-      res.status(200).json(user);
+      res.status(200).json(toUserResponseDto(user));
     } catch (error) {
       next(error);
     }
@@ -50,7 +65,7 @@ usersRouter.post("/", (req: Request, res: Response, next: NextFunction) => {
 
     getUsers().push(newUser);
 
-    res.status(201).json(newUser);
+    res.status(201).json(toUserResponseDto(newUser));
   } catch (error) {
     next(error);
   }
@@ -87,7 +102,7 @@ usersRouter.put(
 
       users[index] = updatedUser;
 
-      res.status(200).json(updatedUser);
+      res.status(200).json(toUserResponseDto(updatedUser));
     } catch (error) {
       next(error);
     }

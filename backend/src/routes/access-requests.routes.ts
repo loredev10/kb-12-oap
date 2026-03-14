@@ -1,4 +1,9 @@
-import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  Router,
+  type NextFunction,
+  type Request,
+  type Response,
+} from "express";
 import {
   allocateAccessRequestId,
   getAccessRequests,
@@ -6,6 +11,7 @@ import {
 } from "../data/access-requests.store.js";
 import { getUsers } from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
+import { toAccessRequestResponseDto } from "../mappers/access-request.mapper.js";
 import type { AccessRequest } from "../types/access-request.js";
 import { parseId } from "../utils/parse-id.js";
 import {
@@ -16,7 +22,9 @@ import {
 export const accessRequestsRouter = Router();
 
 accessRequestsRouter.get("/", (_req: Request, res: Response) => {
-  res.status(200).json({ items: getAccessRequests() });
+  res.status(200).json({
+    items: getAccessRequests().map(toAccessRequestResponseDto),
+  });
 });
 
 accessRequestsRouter.get(
@@ -30,7 +38,7 @@ accessRequestsRouter.get(
         throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
       }
 
-      res.status(200).json(accessRequest);
+      res.status(200).json(toAccessRequestResponseDto(accessRequest));
     } catch (error) {
       next(error);
     }
@@ -49,7 +57,7 @@ accessRequestsRouter.post(
           400,
           "VALIDATION_ERROR",
           "Некоректні дані заявки.",
-          validationErrors as never[],
+          validationErrors,
         );
       }
 
@@ -65,7 +73,7 @@ accessRequestsRouter.post(
 
       getAccessRequests().push(newAccessRequest);
 
-      res.status(201).json(newAccessRequest);
+      res.status(201).json(toAccessRequestResponseDto(newAccessRequest));
     } catch (error) {
       next(error);
     }
@@ -85,7 +93,7 @@ accessRequestsRouter.put(
           400,
           "VALIDATION_ERROR",
           "Некоректні дані заявки.",
-          validationErrors as never[],
+          validationErrors,
         );
       }
 
@@ -108,7 +116,7 @@ accessRequestsRouter.put(
 
       accessRequests[index] = updatedAccessRequest;
 
-      res.status(200).json(updatedAccessRequest);
+      res.status(200).json(toAccessRequestResponseDto(updatedAccessRequest));
     } catch (error) {
       next(error);
     }
