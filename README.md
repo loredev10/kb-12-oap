@@ -96,6 +96,24 @@ Format frontend code automatically:
 
 - `pnpm format:fix:frontend`
 
+## Project architecture
+
+- index.ts — тільки запуск
+
+- app.ts — збирає express-застосунок
+
+- users.routes.ts — маршрути Users
+
+- users.store.ts — дані в пам’яті
+
+- user.validator.ts — нормалізація + валідація
+
+- paths.ts — шлях до папки frontend
+
+- not-found.ts — для не-API маршрутів віддає index.html
+
+- error-handler.ts — єдиний формат помилок
+
 ## Notes
 
 TODO:
