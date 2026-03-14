@@ -8,6 +8,8 @@
     <script src="main.js" defer></script>
   </head>
 
+  <body>
+
   <div id="confirmPopover" class="confirm-popover" hidden>
     <span class="confirm-text">Видалити запис?</span>
     <div class="confirm-actions">
@@ -30,13 +32,19 @@
     </div>
   </div>
 
-  <body>
     <header class="container">
       <h1>Менеджер заявок на доступ до лабораторії</h1>
       <p class="muted">
         ЛР1: CRUD-мінімум для сутності <strong>Users</strong>.
       </p>
     </header>
+
+    <nav class="container" style="margin-top: 16px">
+      <div class="card" style="padding: 12px 16px">
+        <a href="/" style="margin-right: 16px">1. Користувачі</a>
+        <a href="/access-requests.html">2. Заявки на доступ</a>
+      </div>
+    </nav>
 
     <main class="container">
       <section class="card" id="create-section">

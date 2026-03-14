@@ -3,6 +3,7 @@ import { frontendDir } from "./utils/paths.js";
 import { errorHandler } from "./middleware/error-handler.js";
 import { logger } from "./middleware/logger.js";
 import { notFoundHandler } from "./middleware/not-found.js";
+import { accessRequestsRouter } from "./routes/access-requests.routes.js";
 import { usersRouter } from "./routes/users.routes.js";
 
 export const app = express();
@@ -16,6 +17,7 @@ app.get("/health", (_req: Request, res: Response) => {
 });
 
 app.use("/api/users", usersRouter);
+app.use("/api/access-requests", accessRequestsRouter);
 
 // Frontend static files
 app.use(express.static(frontendDir));

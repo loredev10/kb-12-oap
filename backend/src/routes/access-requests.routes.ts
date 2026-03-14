@@ -1,0 +1,138 @@
+import { Router, type NextFunction, type Request, type Response } from "express";
+import {
+  allocateAccessRequestId,
+  getAccessRequests,
+  recomputeNextAccessRequestId,
+} from "../data/access-requests.store.js";
+import { getUsers } from "../data/users.store.js";
+import { ApiError } from "../errors/api-error.js";
+import type { AccessRequest } from "../types/access-request.js";
+import { parseId } from "../utils/parse-id.js";
+import {
+  normalizeAccessRequestDto,
+  validateAccessRequestDto,
+} from "../validators/access-request.validator.js";
+
+export const accessRequestsRouter = Router();
+
+accessRequestsRouter.get("/", (_req: Request, res: Response) => {
+  res.status(200).json({ items: getAccessRequests() });
+});
+
+accessRequestsRouter.get(
+  "/:id",
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = parseId(req.params.id);
+      const accessRequest = getAccessRequests().find((item) => item.id === id);
+
+      if (!accessRequest) {
+        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
+      }
+
+      res.status(200).json(accessRequest);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+accessRequestsRouter.post(
+  "/",
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const dto = normalizeAccessRequestDto(req.body);
+      const validationErrors = validateAccessRequestDto(dto);
+
+      if (validationErrors.length > 0) {
+        throw new ApiError(
+          400,
+          "VALIDATION_ERROR",
+          "Некоректні дані заявки.",
+          validationErrors as never[],
+        );
+      }
+
+      const userExists = getUsers().some((user) => user.id === dto.userId);
+      if (!userExists) {
+        throw new ApiError(400, "USER_NOT_FOUND", "Користувача не знайдено.");
+      }
+
+      const newAccessRequest: AccessRequest = {
+        id: allocateAccessRequestId(),
+        ...dto,
+      };
+
+      getAccessRequests().push(newAccessRequest);
+
+      res.status(201).json(newAccessRequest);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+accessRequestsRouter.put(
+  "/:id",
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = parseId(req.params.id);
+      const dto = normalizeAccessRequestDto(req.body);
+      const validationErrors = validateAccessRequestDto(dto);
+
+      if (validationErrors.length > 0) {
+        throw new ApiError(
+          400,
+          "VALIDATION_ERROR",
+          "Некоректні дані заявки.",
+          validationErrors as never[],
+        );
+      }
+
+      const userExists = getUsers().some((user) => user.id === dto.userId);
+      if (!userExists) {
+        throw new ApiError(400, "USER_NOT_FOUND", "Користувача не знайдено.");
+      }
+
+      const accessRequests = getAccessRequests();
+      const index = accessRequests.findIndex((item) => item.id === id);
+
+      if (index === -1) {
+        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
+      }
+
+      const updatedAccessRequest: AccessRequest = {
+        id,
+        ...dto,
+      };
+
+      accessRequests[index] = updatedAccessRequest;
+
+      res.status(200).json(updatedAccessRequest);
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+accessRequestsRouter.delete(
+  "/:id",
+  (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = parseId(req.params.id);
+      const accessRequests = getAccessRequests();
+      const index = accessRequests.findIndex((item) => item.id === id);
+
+      if (index === -1) {
+        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
+      }
+
+      accessRequests.splice(index, 1);
+      recomputeNextAccessRequestId();
+
+      res.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  },
+);
