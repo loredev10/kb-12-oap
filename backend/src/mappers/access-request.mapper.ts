@@ -9,7 +9,8 @@ export function toAccessRequestResponseDto(
   return {
     id: accessRequest.id,
     userId: accessRequest.userId,
-    date: accessRequest.date,
+    startDateTime: accessRequest.startDateTime,
+    endDateTime: accessRequest.endDateTime,
     comments: accessRequest.comments,
   };
 }

@@ -59,14 +59,25 @@
           </div>
 
           <div class="field">
-            <label for="dateInput">Дата доступу</label>
+            <label for="startDateTimeInput">Початок доступу</label>
             <input
-              id="dateInput"
-              name="date"
-              type="date"
+              id="startDateTimeInput"
+              name="startDateTime"
+              type="datetime-local"
               required
             />
-            <p class="error-text" id="dateError"></p>
+            <p class="error-text" id="startDateTimeError"></p>
+          </div>
+
+          <div class="field">
+            <label for="endDateTimeInput">Завершення доступу</label>
+            <input
+              id="endDateTimeInput"
+              name="endDateTime"
+              type="datetime-local"
+              required
+            />
+            <p class="error-text" id="endDateTimeError"></p>
           </div>
 
           <div class="field">
@@ -114,18 +125,19 @@
 
         <h2>Список заявок</h2>
 
-        <table id="accessRequestsTable">
+          <table id="accessRequestsTable">
             <thead>
-                <tr>
+              <tr>
                 <th>#</th>
                 <th>Користувач</th>
-                <th>Дата</th>
+                <th>Початок</th>
+                <th>Завершення</th>
                 <th>Коментар</th>
                 <th>Дії</th>
-                </tr>
+              </tr>
             </thead>
             <tbody id="accessRequestsTableBody"></tbody>
-        </table>
+          </table>
 
         <p class="muted" id="emptyState">
           Поки що немає заявок. Додайте першу заявку.

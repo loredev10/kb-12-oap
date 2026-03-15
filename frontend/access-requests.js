@@ -1,22 +1,19 @@
 const API_BASE_URL = "/api/access-requests";
 const USERS_API_BASE_URL = "/api/users";
 
-// ====== STATE ======
 let accessRequests = [];
 let users = [];
 let editId = null;
 let filters = { search: "", userId: "" };
 
-// ====== DOM ======
 let form, submitBtn, resetBtn;
-let userIdInput, dateInput, commentsInput;
-let userIdError, dateError, commentsError;
+let userIdInput, startDateTimeInput, endDateTimeInput, commentsInput;
+let userIdError, startDateTimeError, endDateTimeError, commentsError;
 let tableBody, emptyState;
 let confirmPopover;
 let pendingDeleteId = null;
 let searchInput, userFilter, clearFiltersBtn;
 
-// ====== ENTRY POINT ======
 init();
 
 async function init() {
@@ -25,11 +22,13 @@ async function init() {
   resetBtn = document.getElementById("resetBtn");
 
   userIdInput = document.getElementById("userIdInput");
-  dateInput = document.getElementById("dateInput");
+  startDateTimeInput = document.getElementById("startDateTimeInput");
+  endDateTimeInput = document.getElementById("endDateTimeInput");
   commentsInput = document.getElementById("commentsInput");
 
   userIdError = document.getElementById("userIdError");
-  dateError = document.getElementById("dateError");
+  startDateTimeError = document.getElementById("startDateTimeError");
+  endDateTimeError = document.getElementById("endDateTimeError");
   commentsError = document.getElementById("commentsError");
 
   tableBody = document.getElementById("accessRequestsTableBody");
@@ -59,7 +58,6 @@ async function init() {
     await loadUsers();
     fillUsersSelect();
     fillUsersFilter();
-
     await loadAccessRequests();
   } catch (error) {
     console.error(error);
@@ -171,7 +169,8 @@ function onEdit(id) {
   editId = id;
 
   userIdInput.value = String(request.userId);
-  dateInput.value = toDateInputValue(request.date);
+  startDateTimeInput.value = toDateTimeLocalValue(request.startDateTime);
+  endDateTimeInput.value = toDateTimeLocalValue(request.endDateTime);
   commentsInput.value = request.comments || "";
 
   clearErrors();
@@ -241,7 +240,8 @@ function applyFilters(items, currentFilters) {
 function readForm() {
   return {
     userId: Number(userIdInput.value),
-    date: dateInput.value,
+    startDateTime: startDateTimeInput.value,
+    endDateTime: endDateTimeInput.value,
     comments: commentsInput.value,
   };
 }
@@ -255,12 +255,53 @@ function validate(dto) {
     isValid = false;
   }
 
-  if (String(dto.date).trim() === "") {
-    showError(dateInput, dateError, "Дата є обов’язковою.");
+  if (String(dto.startDateTime).trim() === "") {
+    showError(
+      startDateTimeInput,
+      startDateTimeError,
+      "Дата і час початку є обов’язковими.",
+    );
     isValid = false;
-  } else if (!isValidDateString(dto.date)) {
-    showError(dateInput, dateError, "Введіть коректну дату.");
+  } else if (!isValidDateTimeString(dto.startDateTime)) {
+    showError(
+      startDateTimeInput,
+      startDateTimeError,
+      "Введіть коректну дату і час початку.",
+    );
     isValid = false;
+  }
+
+  if (String(dto.endDateTime).trim() === "") {
+    showError(
+      endDateTimeInput,
+      endDateTimeError,
+      "Дата і час завершення є обов’язковими.",
+    );
+    isValid = false;
+  } else if (!isValidDateTimeString(dto.endDateTime)) {
+    showError(
+      endDateTimeInput,
+      endDateTimeError,
+      "Введіть коректну дату і час завершення.",
+    );
+    isValid = false;
+  }
+
+  if (
+    isValidDateTimeString(dto.startDateTime) &&
+    isValidDateTimeString(dto.endDateTime)
+  ) {
+    const start = Date.parse(dto.startDateTime);
+    const end = Date.parse(dto.endDateTime);
+
+    if (end <= start) {
+      showError(
+        endDateTimeInput,
+        endDateTimeError,
+        "Час завершення має бути пізніше за час початку.",
+      );
+      isValid = false;
+    }
   }
 
   const comments = dto.comments.trim();
@@ -292,7 +333,8 @@ function render() {
         <tr data-id="${item.id}">
           <td>${item.id}</td>
           <td>${escapeHtml(userName)}</td>
-          <td>${escapeHtml(formatDate(item.date))}</td>
+          <td>${escapeHtml(formatDateTime(item.startDateTime))}</td>
+          <td>${escapeHtml(formatDateTime(item.endDateTime))}</td>
           <td>${escapeHtml(item.comments || "")}</td>
           <td>
             <button type="button" class="row-btn" data-action="edit">Редагувати</button>
@@ -304,7 +346,6 @@ function render() {
     .join("");
 }
 
-// ====== USERS ======
 async function loadUsers() {
   const response = await fetch(USERS_API_BASE_URL);
   const data = await parseJsonSafe(response);
@@ -353,7 +394,6 @@ function getUserNameById(userId) {
   return user ? user.fullName : `Користувач #${userId}`;
 }
 
-// ====== ACCESS REQUESTS API ======
 async function loadAccessRequests() {
   const response = await fetch(API_BASE_URL);
   const data = await parseJsonSafe(response);
@@ -434,10 +474,10 @@ function extractErrorMessage(data, fallback) {
   return data?.error?.message || fallback;
 }
 
-// ====== ERRORS / UX ======
 function clearErrors() {
   clearFieldError(userIdInput, userIdError);
-  clearFieldError(dateInput, dateError);
+  clearFieldError(startDateTimeInput, startDateTimeError);
+  clearFieldError(endDateTimeInput, endDateTimeError);
   clearFieldError(commentsInput, commentsError);
 }
 
@@ -468,8 +508,12 @@ function applyServerValidationErrors(data) {
       showError(userIdInput, userIdError, item.message);
     }
 
-    if (item.field === "date") {
-      showError(dateInput, dateError, item.message);
+    if (item.field === "startDateTime") {
+      showError(startDateTimeInput, startDateTimeError, item.message);
+    }
+
+    if (item.field === "endDateTime") {
+      showError(endDateTimeInput, endDateTimeError, item.message);
     }
 
     if (item.field === "comments") {
@@ -478,14 +522,13 @@ function applyServerValidationErrors(data) {
   });
 }
 
-// ====== HELPERS ======
-function isValidDateString(value) {
+function isValidDateTimeString(value) {
   if (String(value).trim() === "") return false;
   const timestamp = Date.parse(value);
   return Number.isFinite(timestamp);
 }
 
-function toDateInputValue(value) {
+function toDateTimeLocalValue(value) {
   if (!value) return "";
 
   const date = new Date(value);
@@ -494,17 +537,19 @@ function toDateInputValue(value) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
+  const hours = String(date.getHours()).padStart(2, "0");
+  const minutes = String(date.getMinutes()).padStart(2, "0");
 
-  return `${year}-${month}-${day}`;
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
-function formatDate(value) {
+function formatDateTime(value) {
   if (!value) return "";
 
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return String(value);
 
-  return date.toLocaleDateString("uk-UA");
+  return date.toLocaleString("uk-UA");
 }
 
 function escapeHtml(str) {

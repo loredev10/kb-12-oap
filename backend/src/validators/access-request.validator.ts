@@ -15,12 +15,15 @@ export function normalizeAccessRequestDto(body: unknown): AccessRequestDto {
 
   return {
     userId: normalizedUserId,
-    date: typeof dto.date === "string" ? dto.date.trim() : "",
+    startDateTime:
+      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
+    endDateTime:
+      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
     comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
   };
 }
 
-function isValidDateString(value: string): boolean {
+function isValidDateTimeString(value: string): boolean {
   if (value === "") return false;
 
   const timestamp = Date.parse(value);
@@ -39,16 +42,45 @@ export function validateAccessRequestDto(
     });
   }
 
-  if (dto.date === "") {
+  if (dto.startDateTime === "") {
     errors.push({
-      field: "date",
-      message: "Дата є обов’язковою.",
+      field: "startDateTime",
+      message: "Дата і час початку є обов’язковими.",
     });
-  } else if (!isValidDateString(dto.date)) {
+  } else if (!isValidDateTimeString(dto.startDateTime)) {
     errors.push({
-      field: "date",
-      message: "Введіть коректну дату.",
+      field: "startDateTime",
+      message: "Введіть коректну дату і час початку.",
     });
+  }
+
+  if (dto.endDateTime === "") {
+    errors.push({
+      field: "endDateTime",
+      message: "Дата і час завершення є обов’язковими.",
+    });
+  } else if (!isValidDateTimeString(dto.endDateTime)) {
+    errors.push({
+      field: "endDateTime",
+      message: "Введіть коректну дату і час завершення.",
+    });
+  }
+
+  if (
+    dto.startDateTime !== "" &&
+    dto.endDateTime !== "" &&
+    isValidDateTimeString(dto.startDateTime) &&
+    isValidDateTimeString(dto.endDateTime)
+  ) {
+    const start = Date.parse(dto.startDateTime);
+    const end = Date.parse(dto.endDateTime);
+
+    if (end <= start) {
+      errors.push({
+        field: "endDateTime",
+        message: "Час завершення має бути пізніше за час початку.",
+      });
+    }
   }
 
   if (dto.comments === "") {
