@@ -97,8 +97,8 @@ async function onSubmit(event) {
   event.preventDefault();
 
   const dto = readForm();
-  const isValid = validate(dto);
-  if (!isValid) return;
+  // const isValid = validate(dto);
+  // if (!isValid) return;
 
   try {
     if (editId !== null) {
