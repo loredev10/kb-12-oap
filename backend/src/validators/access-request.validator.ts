@@ -3,6 +3,8 @@ import type {
   AccessRequestValidationIssue,
 } from "../types/access-request.js";
 
+const MAX_ACCESS_DURATION_MS = 5 * 60 * 60 * 1000;
+
 export function normalizeAccessRequestDto(body: unknown): AccessRequestDto {
   const dto = (body ?? {}) as Partial<AccessRequestDto>;
 
@@ -74,11 +76,17 @@ export function validateAccessRequestDto(
   ) {
     const start = Date.parse(dto.startDateTime);
     const end = Date.parse(dto.endDateTime);
+    const durationMs = end - start;
 
     if (end <= start) {
       errors.push({
         field: "endDateTime",
         message: "Час завершення має бути пізніше за час початку.",
+      });
+    } else if (durationMs > MAX_ACCESS_DURATION_MS) {
+      errors.push({
+        field: "endDateTime",
+        message: "Тривалість доступу не може перевищувати 5 годин.",
       });
     }
   }
