@@ -1,22 +1,39 @@
 import type {
-  AccessRequestDto,
   AccessRequestValidationIssue,
+  CreateAccessRequestRequestDto,
+  UpdateAccessRequestRequestDto,
 } from "../types/access-request.js";
 
 const MAX_ACCESS_DURATION_MS = 5 * 60 * 60 * 1000;
 
-export function normalizeAccessRequestDto(body: unknown): AccessRequestDto {
-  const dto = (body ?? {}) as Partial<AccessRequestDto>;
+function normalizeUserId(value: unknown): number {
+  if (typeof value === "number") return value;
+  if (typeof value === "string") return Number(value);
+  return Number.NaN;
+}
 
-  const normalizedUserId =
-    typeof dto.userId === "number"
-      ? dto.userId
-      : typeof dto.userId === "string"
-        ? Number(dto.userId)
-        : Number.NaN;
+export function normalizeCreateAccessRequestRequestDto(
+  body: unknown,
+): CreateAccessRequestRequestDto {
+  const dto = (body ?? {}) as Partial<CreateAccessRequestRequestDto>;
 
   return {
-    userId: normalizedUserId,
+    userId: normalizeUserId(dto.userId),
+    startDateTime:
+      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
+    endDateTime:
+      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
+    comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
+  };
+}
+
+export function normalizeUpdateAccessRequestRequestDto(
+  body: unknown,
+): UpdateAccessRequestRequestDto {
+  const dto = (body ?? {}) as Partial<UpdateAccessRequestRequestDto>;
+
+  return {
+    userId: normalizeUserId(dto.userId),
     startDateTime:
       typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
     endDateTime:
@@ -32,8 +49,8 @@ function isValidDateTimeString(value: string): boolean {
   return Number.isFinite(timestamp);
 }
 
-export function validateAccessRequestDto(
-  dto: AccessRequestDto,
+export function validateCreateAccessRequestRequestDto(
+  dto: CreateAccessRequestRequestDto,
 ): AccessRequestValidationIssue[] {
   const errors: AccessRequestValidationIssue[] = [];
 
@@ -104,4 +121,10 @@ export function validateAccessRequestDto(
   }
 
   return errors;
+}
+
+export function validateUpdateAccessRequestRequestDto(
+  dto: UpdateAccessRequestRequestDto,
+): AccessRequestValidationIssue[] {
+  return validateCreateAccessRequestRequestDto(dto);
 }

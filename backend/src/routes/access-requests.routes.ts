@@ -15,8 +15,10 @@ import { toAccessRequestResponseDto } from "../mappers/access-request.mapper.js"
 import type { AccessRequest } from "../types/access-request.js";
 import { parseId } from "../utils/parse-id.js";
 import {
-  normalizeAccessRequestDto,
-  validateAccessRequestDto,
+  normalizeCreateAccessRequestRequestDto,
+  normalizeUpdateAccessRequestRequestDto,
+  validateCreateAccessRequestRequestDto,
+  validateUpdateAccessRequestRequestDto,
 } from "../validators/access-request.validator.js";
 
 export const accessRequestsRouter = Router();
@@ -49,8 +51,8 @@ accessRequestsRouter.post(
   "/",
   (req: Request, res: Response, next: NextFunction) => {
     try {
-      const dto = normalizeAccessRequestDto(req.body);
-      const validationErrors = validateAccessRequestDto(dto);
+      const dto = normalizeCreateAccessRequestRequestDto(req.body);
+      const validationErrors = validateCreateAccessRequestRequestDto(dto);
 
       if (validationErrors.length > 0) {
         throw new ApiError(
@@ -85,8 +87,8 @@ accessRequestsRouter.put(
   (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
-      const dto = normalizeAccessRequestDto(req.body);
-      const validationErrors = validateAccessRequestDto(dto);
+      const dto = normalizeUpdateAccessRequestRequestDto(req.body);
+      const validationErrors = validateUpdateAccessRequestRequestDto(dto);
 
       if (validationErrors.length > 0) {
         throw new ApiError(

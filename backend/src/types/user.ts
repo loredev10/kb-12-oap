@@ -8,7 +8,14 @@ export type User = {
   notes: string;
 };
 
-export type UserDto = {
+export type CreateUserRequestDto = {
+  fullName: string;
+  email: string;
+  role: UserRole;
+  notes: string;
+};
+
+export type UpdateUserRequestDto = {
   fullName: string;
   email: string;
   role: UserRole;
@@ -23,7 +30,7 @@ export type UserResponseDto = {
   notes: string;
 };
 
-export type ValidationIssue = {
-  field: keyof UserDto;
+export type UserValidationIssue = {
+  field: keyof CreateUserRequestDto;
   message: string;
 };

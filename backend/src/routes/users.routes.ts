@@ -14,8 +14,10 @@ import { toUserResponseDto } from "../mappers/user.mapper.js";
 import type { User } from "../types/user.js";
 import { parseId } from "../utils/parse-id.js";
 import {
-  normalizeUserDto,
-  validateUserDto,
+  normalizeCreateUserRequestDto,
+  normalizeUpdateUserRequestDto,
+  validateCreateUserRequestDto,
+  validateUpdateUserRequestDto,
 } from "../validators/user.validator.js";
 
 export const usersRouter = Router();
@@ -46,8 +48,8 @@ usersRouter.get(
 
 usersRouter.post("/", (req: Request, res: Response, next: NextFunction) => {
   try {
-    const dto = normalizeUserDto(req.body);
-    const validationErrors = validateUserDto(dto);
+    const dto = normalizeCreateUserRequestDto(req.body);
+    const validationErrors = validateCreateUserRequestDto(dto);
 
     if (validationErrors.length > 0) {
       throw new ApiError(
@@ -76,8 +78,8 @@ usersRouter.put(
   (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
-      const dto = normalizeUserDto(req.body);
-      const validationErrors = validateUserDto(dto);
+      const dto = normalizeUpdateUserRequestDto(req.body);
+      const validationErrors = validateUpdateUserRequestDto(dto);
 
       if (validationErrors.length > 0) {
         throw new ApiError(

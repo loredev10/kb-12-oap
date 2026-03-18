@@ -1,11 +1,18 @@
-import type { UserDto, UserRole, ValidationIssue } from "../types/user.js";
+import type {
+  CreateUserRequestDto,
+  UpdateUserRequestDto,
+  UserRole,
+  UserValidationIssue,
+} from "../types/user.js";
 
 export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 }
 
-export function normalizeUserDto(body: unknown): UserDto {
-  const dto = (body ?? {}) as Partial<UserDto>;
+export function normalizeCreateUserRequestDto(
+  body: unknown,
+): CreateUserRequestDto {
+  const dto = (body ?? {}) as Partial<CreateUserRequestDto>;
 
   return {
     fullName: typeof dto.fullName === "string" ? dto.fullName.trim() : "",
@@ -15,8 +22,23 @@ export function normalizeUserDto(body: unknown): UserDto {
   };
 }
 
-export function validateUserDto(dto: UserDto): ValidationIssue[] {
-  const errors: ValidationIssue[] = [];
+export function normalizeUpdateUserRequestDto(
+  body: unknown,
+): UpdateUserRequestDto {
+  const dto = (body ?? {}) as Partial<UpdateUserRequestDto>;
+
+  return {
+    fullName: typeof dto.fullName === "string" ? dto.fullName.trim() : "",
+    email: typeof dto.email === "string" ? dto.email.trim() : "",
+    role: typeof dto.role === "string" ? (dto.role.trim() as UserRole) : "",
+    notes: typeof dto.notes === "string" ? dto.notes.trim() : "",
+  };
+}
+
+export function validateCreateUserRequestDto(
+  dto: CreateUserRequestDto,
+): UserValidationIssue[] {
+  const errors: UserValidationIssue[] = [];
 
   if (dto.fullName === "") {
     errors.push({
@@ -58,4 +80,10 @@ export function validateUserDto(dto: UserDto): ValidationIssue[] {
   }
 
   return errors;
+}
+
+export function validateUpdateUserRequestDto(
+  dto: UpdateUserRequestDto,
+): UserValidationIssue[] {
+  return validateCreateUserRequestDto(dto);
 }

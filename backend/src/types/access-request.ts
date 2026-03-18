@@ -6,7 +6,14 @@ export type AccessRequest = {
   comments: string;
 };
 
-export type AccessRequestDto = {
+export type CreateAccessRequestRequestDto = {
+  userId: number;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+};
+
+export type UpdateAccessRequestRequestDto = {
   userId: number;
   startDateTime: string;
   endDateTime: string;
@@ -22,6 +29,6 @@ export type AccessRequestResponseDto = {
 };
 
 export type AccessRequestValidationIssue = {
-  field: keyof AccessRequestDto;
+  field: keyof CreateAccessRequestRequestDto;
   message: string;
 };
