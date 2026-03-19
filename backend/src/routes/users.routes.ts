@@ -7,7 +7,6 @@ import {
 import {
   allocateUserId,
   getUsers,
-  recomputeNextUserId,
 } from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
 import { toUserResponseDto } from "../mappers/user.mapper.js";
@@ -23,8 +22,10 @@ import {
 export const usersRouter = Router();
 
 usersRouter.get("/", (_req: Request, res: Response) => {
+  const activeUsers = getUsers().filter((item) => !item.isDeleted);
+
   res.status(200).json({
-    items: getUsers().map(toUserResponseDto),
+    items: activeUsers.map(toUserResponseDto),
   });
 });
 
@@ -33,7 +34,9 @@ usersRouter.get(
   (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
-      const user = getUsers().find((item) => item.id === id);
+      const user = getUsers().find(
+        (item) => item.id === id && !item.isDeleted,
+      );
 
       if (!user) {
         throw new ApiError(404, "NOT_FOUND", "Користувача не знайдено.");
@@ -63,6 +66,7 @@ usersRouter.post("/", (req: Request, res: Response, next: NextFunction) => {
     const newUser: User = {
       id: allocateUserId(),
       ...dto,
+      isDeleted: false,
     };
 
     getUsers().push(newUser);
@@ -91,7 +95,9 @@ usersRouter.put(
       }
 
       const users = getUsers();
-      const index = users.findIndex((item) => item.id === id);
+      const index = users.findIndex(
+        (item) => item.id === id && !item.isDeleted,
+      );
 
       if (index === -1) {
         throw new ApiError(404, "NOT_FOUND", "Користувача не знайдено.");
@@ -100,6 +106,7 @@ usersRouter.put(
       const updatedUser: User = {
         id,
         ...dto,
+        isDeleted: false,
       };
 
       users[index] = updatedUser;
@@ -117,14 +124,13 @@ usersRouter.delete(
     try {
       const id = parseId(req.params.id);
       const users = getUsers();
-      const index = users.findIndex((item) => item.id === id);
+      const user = users.find((item) => item.id === id && !item.isDeleted);
 
-      if (index === -1) {
+      if (!user) {
         throw new ApiError(404, "NOT_FOUND", "Користувача не знайдено.");
       }
 
-      users.splice(index, 1);
-      recomputeNextUserId();
+      user.isDeleted = true;
 
       res.status(204).send();
     } catch (error) {

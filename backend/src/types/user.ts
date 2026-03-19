@@ -6,6 +6,7 @@ export type User = {
   email: string;
   role: UserRole;
   notes: string;
+  isDeleted: boolean;
 };
 
 export type CreateUserRequestDto = {

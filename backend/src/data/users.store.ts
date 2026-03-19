@@ -7,6 +7,7 @@ let users: User[] = [
     email: "pavlo.ivanenko@example.com",
     role: "student",
     notes: "Потрібен доступ до лабораторії мереж",
+    isDeleted: false,
   },
   {
     id: 2,
@@ -14,6 +15,7 @@ let users: User[] = [
     email: "olena.petrenko@example.com",
     role: "teacher",
     notes: "Викладач курсу з інформаційних систем",
+    isDeleted: false,
   },
   {
     id: 3,
@@ -21,6 +23,7 @@ let users: User[] = [
     email: "andrii.koval@example.com",
     role: "lab_assistant",
     notes: "Відповідає за обладнання лабораторії",
+    isDeleted: false,
   },
 ];
 

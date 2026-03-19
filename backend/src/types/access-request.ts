@@ -4,6 +4,7 @@ export type AccessRequest = {
   startDateTime: string;
   endDateTime: string;
   comments: string;
+  isDeleted: boolean;
 };
 
 export type CreateAccessRequestRequestDto = {

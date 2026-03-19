@@ -7,6 +7,7 @@ let accessRequests: AccessRequest[] = [
     startDateTime: "2026-03-18T09:00",
     endDateTime: "2026-03-18T11:00",
     comments: "Практична робота з мережевих технологій",
+    isDeleted: false,
   },
   {
     id: 2,
@@ -14,6 +15,7 @@ let accessRequests: AccessRequest[] = [
     startDateTime: "2026-03-18T12:00",
     endDateTime: "2026-03-18T14:00",
     comments: "Проведення заняття в лабораторії",
+    isDeleted: false,
   },
   {
     id: 3,
@@ -21,6 +23,7 @@ let accessRequests: AccessRequest[] = [
     startDateTime: "2026-03-19T10:30",
     endDateTime: "2026-03-19T13:00",
     comments: "Перевірка та налаштування обладнання",
+    isDeleted: false,
   },
 ];
 
