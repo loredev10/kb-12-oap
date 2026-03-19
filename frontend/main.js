@@ -3,7 +3,7 @@ const API_BASE_URL = "/api/users";
 // ====== STATE ======
 let users = [];
 let editId = null;
-let filters = { search: "", role: "" };
+let filters = { search: "", role: "", status: "active" };
 
 // ====== DOM ======
 let form, submitBtn, resetBtn;
@@ -55,6 +55,9 @@ async function init() {
   roleFilter.addEventListener("change", onRoleChange);
   clearFiltersBtn.addEventListener("click", onClearFilters);
 
+  const statusFilterGroup = document.getElementById("statusFilterGroup");
+  statusFilterGroup?.addEventListener("change", onStatusChange);
+
   try {
     await loadUsers();
   } catch (error) {
@@ -63,6 +66,12 @@ async function init() {
   }
 
   render();
+}
+
+function onStatusChange() {
+  const selected = document.querySelector('input[name="statusFilter"]:checked');
+  filters.status = selected ? selected.value : "active";
+  loadUsers().then(render).catch(console.error);
 }
 
 function onSearchInput() {
@@ -321,7 +330,11 @@ function render() {
 
 // ====== API ======
 async function loadUsers() {
-  const response = await fetch(API_BASE_URL);
+  const query = new URLSearchParams({
+    status: filters.status || "active",
+  });
+
+  const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
   const data = await parseJsonSafe(response);
 
   if (!response.ok) {

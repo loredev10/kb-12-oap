@@ -21,6 +21,14 @@ export type UpdateAccessRequestRequestDto = {
   comments: string;
 };
 
+export type PatchAccessRequestRequestDto = {
+  userId?: number;
+  startDateTime?: string;
+  endDateTime?: string;
+  comments?: string;
+  isDeleted?: boolean;
+};
+
 export type AccessRequestResponseDto = {
   id: number;
   userId: number;
@@ -30,6 +38,6 @@ export type AccessRequestResponseDto = {
 };
 
 export type AccessRequestValidationIssue = {
-  field: keyof CreateAccessRequestRequestDto;
+  field: string;
   message: string;
 };

@@ -4,7 +4,7 @@ const USERS_API_BASE_URL = "/api/users";
 let accessRequests = [];
 let users = [];
 let editId = null;
-let filters = { search: "", userId: "" };
+let filters = { search: "", userId: "", status: "active" };
 
 let form, submitBtn, resetBtn;
 let userIdInput, startDateTimeInput, endDateTimeInput, commentsInput;
@@ -54,6 +54,9 @@ async function init() {
   userFilter.addEventListener("change", onUserFilterChange);
   clearFiltersBtn.addEventListener("click", onClearFilters);
 
+  const statusFilterGroup = document.getElementById("statusFilterGroup");
+  statusFilterGroup?.addEventListener("change", onStatusChange);
+
   try {
     await loadUsers();
     fillUsersSelect();
@@ -70,6 +73,12 @@ async function init() {
 function onSearchInput() {
   filters.search = searchInput.value;
   render();
+}
+
+function onStatusChange() {
+  const selected = document.querySelector('input[name="statusFilter"]:checked');
+  filters.status = selected ? selected.value : "active";
+  loadAccessRequests().then(render).catch(console.error);
 }
 
 function onUserFilterChange() {
@@ -395,7 +404,11 @@ function getUserNameById(userId) {
 }
 
 async function loadAccessRequests() {
-  const response = await fetch(API_BASE_URL);
+  const query = new URLSearchParams({
+    status: filters.status || "active",
+  });
+
+  const response = await fetch(`${API_BASE_URL}?${query.toString()}`);
   const data = await parseJsonSafe(response);
 
   if (!response.ok) {

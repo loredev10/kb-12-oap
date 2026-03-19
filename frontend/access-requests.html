@@ -118,6 +118,24 @@
                 </select>
             </div>
 
+          <div class="control">
+            <span class="label">Статус записів</span>
+            <div id="statusFilterGroup" class="role-options">
+              <label class="role-option">
+                <input type="radio" name="statusFilter" value="active" checked />
+                <span>Активні</span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="statusFilter" value="deleted" />
+                <span>Видалені</span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="statusFilter" value="all" />
+                <span>Усі</span>
+              </label>
+            </div>
+          </div>
+
           <div class="control control-btn">
             <button type="button" id="clearFiltersBtn">Скинути</button>
           </div>

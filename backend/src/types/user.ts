@@ -23,6 +23,14 @@ export type UpdateUserRequestDto = {
   notes: string;
 };
 
+export type PatchUserRequestDto = {
+  fullName?: string;
+  email?: string;
+  role?: UserRole;
+  notes?: string;
+  isDeleted?: boolean;
+};
+
 export type UserResponseDto = {
   id: number;
   fullName: string;
@@ -32,6 +40,6 @@ export type UserResponseDto = {
 };
 
 export type UserValidationIssue = {
-  field: keyof CreateUserRequestDto;
+  field: string;
   message: string;
 };
