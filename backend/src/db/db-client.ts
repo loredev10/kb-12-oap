@@ -5,44 +5,22 @@ export type RunResult = {
   changes: number;
 };
 
-export function all<T>(sql: string): Promise<T[]> {
-  return new Promise((resolve, reject) => {
-    db.all(sql, (error: Error | null, rows: T[]) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(rows);
-    });
-  });
+export async function all<T>(sql: string): Promise<T[]> {
+  const statement = db.prepare(sql);
+  return statement.all() as T[];
 }
 
-export function get<T>(sql: string): Promise<T | undefined> {
-  return new Promise((resolve, reject) => {
-    db.get(sql, (error: Error | null, row: T | undefined) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(row);
-    });
-  });
+export async function get<T>(sql: string): Promise<T | undefined> {
+  const statement = db.prepare(sql);
+  return statement.get() as T | undefined;
 }
 
-export function run(sql: string): Promise<RunResult> {
-  return new Promise((resolve, reject) => {
-    db.run(sql, function (this: RunResult, error: Error | null) {
-      if (error) {
-        reject(error);
-        return;
-      }
+export async function run(sql: string): Promise<RunResult> {
+  const statement = db.prepare(sql);
+  const result = statement.run();
 
-      resolve({
-        lastID: this.lastID,
-        changes: this.changes,
-      });
-    });
-  });
+  return {
+    lastID: Number(result.lastInsertRowid),
+    changes: Number(result.changes),
+  };
 }
