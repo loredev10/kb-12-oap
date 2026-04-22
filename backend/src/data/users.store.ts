@@ -1,47 +1,136 @@
-import type { User } from "../types/user.js";
+import { all, get, run } from "../db/db-client.js";
+import type { PatchUserRequestDto, User } from "../types/user.js";
 
-let users: User[] = [
-  {
-    id: 1,
-    fullName: "Павло Іваненко",
-    email: "pavlo.ivanenko@example.com",
-    role: "student",
-    notes: "Потрібен доступ до лабораторії мереж",
-    isDeleted: false,
-  },
-  {
-    id: 2,
-    fullName: "Олена Петренко",
-    email: "olena.petrenko@example.com",
-    role: "teacher",
-    notes: "Викладач курсу з інформаційних систем",
-    isDeleted: false,
-  },
-  {
-    id: 3,
-    fullName: "Андрій Коваль",
-    email: "andrii.koval@example.com",
-    role: "lab_assistant",
-    notes: "Відповідає за обладнання лабораторії",
-    isDeleted: false,
-  },
-];
+type UserRow = {
+  id: number;
+  full_name: string;
+  email: string;
+  role: User["role"];
+  notes: string;
+  is_deleted: number;
+};
 
-let nextUserId = 4;
-
-export function getUsers(): User[] {
-  return users;
+function escapeSqlString(value: string): string {
+  return value.replace(/'/g, "''");
 }
 
-export function allocateUserId(): number {
-  return nextUserId++;
+function mapUserRow(row: UserRow): User {
+  return {
+    id: Number(row.id),
+    fullName: row.full_name,
+    email: row.email,
+    role: row.role,
+    notes: row.notes,
+    isDeleted: Boolean(row.is_deleted),
+  };
 }
 
-export function recomputeNextUserId(): void {
-  if (users.length === 0) {
-    nextUserId = 1;
-    return;
+export async function listUsers(): Promise<User[]> {
+  const rows = await all<UserRow>(`
+    SELECT
+      id,
+      full_name,
+      email,
+      role,
+      notes,
+      is_deleted
+    FROM users
+    ORDER BY id DESC;
+  `);
+
+  return rows.map(mapUserRow);
+}
+
+export async function findUserById(id: number): Promise<User | undefined> {
+  const row = await get<UserRow>(`
+    SELECT
+      id,
+      full_name,
+      email,
+      role,
+      notes,
+      is_deleted
+    FROM users
+    WHERE id = ${id};
+  `);
+
+  if (!row) {
+    return undefined;
   }
 
-  nextUserId = Math.max(...users.map((item) => item.id)) + 1;
+  return mapUserRow(row);
+}
+
+export async function createUser(data: Omit<User, "id" | "isDeleted">): Promise<User> {
+  const result = await run(`
+    INSERT INTO users (
+      full_name,
+      email,
+      role,
+      notes,
+      is_deleted
+    )
+    VALUES (
+      '${escapeSqlString(data.fullName)}',
+      '${escapeSqlString(data.email)}',
+      '${escapeSqlString(data.role)}',
+      '${escapeSqlString(data.notes)}',
+      0
+    );
+  `);
+
+  const created = await findUserById(result.lastID);
+
+  if (!created) {
+    throw new Error("Failed to load created user.");
+  }
+
+  return created;
+}
+
+export async function replaceUser(item: User): Promise<User | undefined> {
+  const result = await run(`
+    UPDATE users
+    SET
+      full_name = '${escapeSqlString(item.fullName)}',
+      email = '${escapeSqlString(item.email)}',
+      role = '${escapeSqlString(item.role)}',
+      notes = '${escapeSqlString(item.notes)}',
+      is_deleted = ${item.isDeleted ? 1 : 0}
+    WHERE id = ${item.id};
+  `);
+
+  if (result.changes === 0) {
+    return undefined;
+  }
+
+  return await findUserById(item.id);
+}
+
+export async function patchUser(
+  id: number,
+  patch: PatchUserRequestDto,
+): Promise<User | undefined> {
+  const current = await findUserById(id);
+
+  if (!current) {
+    return undefined;
+  }
+
+  const nextUser: User = {
+    ...current,
+    ...patch,
+  };
+
+  return replaceUser(nextUser);
+}
+
+export async function softDeleteUser(id: number): Promise<boolean> {
+  const result = await run(`
+    UPDATE users
+    SET is_deleted = 1
+    WHERE id = ${id} AND is_deleted = 0;
+  `);
+
+  return result.changes > 0;
 }

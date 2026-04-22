@@ -11,7 +11,7 @@ import {
   replaceAccessRequest,
   softDeleteAccessRequest,
 } from "../data/access-requests.store.js";
-import { getUsers } from "../data/users.store.js";
+import { listUsers } from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
 import { toAccessRequestResponseDto } from "../mappers/access-request.mapper.js";
 import type {
@@ -89,7 +89,8 @@ accessRequestsRouter.post(
         );
       }
 
-      const userExists = getUsers().some(
+      const users = await listUsers();
+      const userExists = users.some(
         (user) => user.id === dto.userId && !user.isDeleted,
       );
 
@@ -126,7 +127,8 @@ accessRequestsRouter.put(
         );
       }
 
-      const userExists = getUsers().some(
+      const users = await listUsers();
+      const userExists = users.some(
         (user) => user.id === dto.userId && !user.isDeleted,
       );
 
@@ -179,7 +181,8 @@ accessRequestsRouter.patch(
         ...(patchDto as PatchAccessRequestRequestDto),
       };
 
-      const userExists = getUsers().some(
+      const users = await listUsers();
+      const userExists = users.some(
         (user) => user.id === merged.userId && !user.isDeleted,
       );
 
