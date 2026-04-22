@@ -5,8 +5,11 @@ import {
   type Response,
 } from "express";
 import {
-  allocateAccessRequestId,
-  getAccessRequests,
+  createAccessRequest,
+  findAccessRequestById,
+  listAccessRequests,
+  replaceAccessRequest,
+  softDeleteAccessRequest,
 } from "../data/access-requests.store.js";
 import { getUsers } from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
@@ -28,33 +31,38 @@ import {
 
 export const accessRequestsRouter = Router();
 
-accessRequestsRouter.get("/", (req: Request, res: Response) => {
-  const status = parseStatusFilter(req.query.status);
-  const allItems = getAccessRequests();
+accessRequestsRouter.get(
+  "/",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const status = parseStatusFilter(req.query.status);
+      const allItems = await listAccessRequests();
 
-  let items = allItems;
+      let items = allItems;
 
-  if (status === "active") {
-    items = allItems.filter((item) => !item.isDeleted);
-  } else if (status === "deleted") {
-    items = allItems.filter((item) => item.isDeleted);
-  }
+      if (status === "active") {
+        items = allItems.filter((item) => !item.isDeleted);
+      } else if (status === "deleted") {
+        items = allItems.filter((item) => item.isDeleted);
+      }
 
-  res.status(200).json({
-    items: items.map(toAccessRequestResponseDto),
-  });
-});
+      res.status(200).json({
+        items: items.map(toAccessRequestResponseDto),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 accessRequestsRouter.get(
   "/:id",
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
-      const accessRequest = getAccessRequests().find(
-        (item) => item.id === id && !item.isDeleted,
-      );
+      const accessRequest = await findAccessRequestById(id);
 
-      if (!accessRequest) {
+      if (!accessRequest || accessRequest.isDeleted) {
         throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
       }
 
@@ -67,7 +75,7 @@ accessRequestsRouter.get(
 
 accessRequestsRouter.post(
   "/",
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const dto = normalizeCreateAccessRequestRequestDto(req.body);
       const validationErrors = validateCreateAccessRequestRequestDto(dto);
@@ -89,15 +97,12 @@ accessRequestsRouter.post(
         throw new ApiError(400, "USER_NOT_FOUND", "Користувача не знайдено.");
       }
 
-      const newAccessRequest: AccessRequest = {
-        id: allocateAccessRequestId(),
+      const created = await createAccessRequest({
         ...dto,
         isDeleted: false,
-      };
+      });
 
-      getAccessRequests().push(newAccessRequest);
-
-      res.status(201).json(toAccessRequestResponseDto(newAccessRequest));
+      res.status(201).json(toAccessRequestResponseDto(created));
     } catch (error) {
       next(error);
     }
@@ -106,7 +111,7 @@ accessRequestsRouter.post(
 
 accessRequestsRouter.put(
   "/:id",
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
       const dto = normalizeUpdateAccessRequestRequestDto(req.body);
@@ -129,24 +134,17 @@ accessRequestsRouter.put(
         throw new ApiError(400, "USER_NOT_FOUND", "Користувача не знайдено.");
       }
 
-      const accessRequests = getAccessRequests();
-      const index = accessRequests.findIndex(
-        (item) => item.id === id && !item.isDeleted,
-      );
-
-      if (index === -1) {
-        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
-      }
-
-      const updatedAccessRequest: AccessRequest = {
+      const updated = await replaceAccessRequest({
         id,
         ...dto,
         isDeleted: false,
-      };
+      });
 
-      accessRequests[index] = updatedAccessRequest;
+      if (!updated) {
+        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
+      }
 
-      res.status(200).json(toAccessRequestResponseDto(updatedAccessRequest));
+      res.status(200).json(toAccessRequestResponseDto(updated));
     } catch (error) {
       next(error);
     }
@@ -155,7 +153,7 @@ accessRequestsRouter.put(
 
 accessRequestsRouter.patch(
   "/:id",
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
       const patchDto = normalizePatchAccessRequestRequestDto(req.body);
@@ -170,7 +168,7 @@ accessRequestsRouter.patch(
         );
       }
 
-      const accessRequest = getAccessRequests().find((item) => item.id === id);
+      const accessRequest = await findAccessRequestById(id);
 
       if (!accessRequest) {
         throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
@@ -205,9 +203,13 @@ accessRequestsRouter.patch(
         );
       }
 
-      Object.assign(accessRequest, merged);
+      const updated = await replaceAccessRequest(merged);
 
-      res.status(200).json(toAccessRequestResponseDto(accessRequest));
+      if (!updated) {
+        throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
+      }
+
+      res.status(200).json(toAccessRequestResponseDto(updated));
     } catch (error) {
       next(error);
     }
@@ -216,18 +218,14 @@ accessRequestsRouter.patch(
 
 accessRequestsRouter.delete(
   "/:id",
-  (req: Request, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(req.params.id);
-      const accessRequest = getAccessRequests().find(
-        (item) => item.id === id && !item.isDeleted,
-      );
+      const deleted = await softDeleteAccessRequest(id);
 
-      if (!accessRequest) {
+      if (!deleted) {
         throw new ApiError(404, "NOT_FOUND", "Заявку не знайдено.");
       }
-
-      accessRequest.isDeleted = true;
 
       res.status(204).send();
     } catch (error) {
