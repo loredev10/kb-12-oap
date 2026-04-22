@@ -9,6 +9,8 @@
     "build:backend": "pnpm --filter @kb-12/backend build",
     "build:frontend": "pnpm --filter @kb-12/frontend build",
 
+    "seed:backend": "pnpm --filter @kb-12/backend seed",
+
     "type-check:backend": "pnpm --filter @kb-12/backend type-check",
     "type-check:frontend": "pnpm --filter @kb-12/frontend type-check",
 
