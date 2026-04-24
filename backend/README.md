@@ -1,11 +1,12 @@
 # Backend
 
-Backend part of the course app.
+Backend part of the course app for Laboratory Work #3.
 
 ## Stack
 
 - Express
 - TypeScript
+- SQLite
 - tsx
 - ESLint
 - Prettier
@@ -43,28 +44,54 @@ From the `backend` directory:
 
 - `pnpm start`
 
-TODO: verify the compiled output path used by the `start` script.
+## Seed
 
-## Lint / Format
+From the project root or from the `backend` directory:
 
-From the `backend` directory:
+- `pnpm seed:backend`
+- or `pnpm seed`
 
-- `pnpm lint`
-- `pnpm format`
+## Database
 
-## Notes
+- SQLite file is created locally at `backend/data/app.db`
+- DB schema is initialized automatically on server start
+- Test data can be added with the seed script
 
-This backend is being developed as part of Laboratory Work #2.
+## Database schema
 
-Current functionality:
+### users
+- `id` - primary key
+- `full_name` - required
+- `email` - required, unique
+- `role` - required
+- `notes`
+- `is_deleted`
 
-- basic Express server
-- `/health` endpoint
+### access_requests
+- `id` - primary key
+- `user_id` - foreign key -> `users.id`
+- `start_date_time` - required
+- `end_date_time` - required
+- `comments` - required
+- `is_deleted`
 
-TODO:
-- add routes for Users
-- add routes for AccessRequests
-- add routes for Approvals
-- define DTOs
-- add validation
-- add layered structure (`routes`, `controllers`, `services`, `repositories`)
+## Relations
+
+- one user -> many access requests
+- `access_requests.user_id` references `users.id`
+
+## Constraints
+
+- `NOT NULL` for required fields
+- `UNIQUE` for `users.email`
+- `CHECK` for allowed values / simple rules
+- `FOREIGN KEY` for relation between users and access requests
+
+## API examples
+
+```bash
+curl -i http://localhost:3000/api/users
+curl -i http://localhost:3000/api/users/1
+curl -i -X POST http://localhost:3000/api/users -H "Content-Type: application/json" -d '{"fullName":"Test User","email":"test.user@example.com","role":"student","notes":"created from curl"}'
+curl -i http://localhost:3000/api/access-requests
+curl -i -X POST http://localhost:3000/api/access-requests -H "Content-Type: application/json" -d '{"userId":1,"startDateTime":"2026-04-23T10:00","endDateTime":"2026-04-23T12:00","comments":"test request"}'
