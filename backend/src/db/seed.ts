@@ -1,8 +1,8 @@
-import { initDb } from "./init-db.js";
+import { migrate } from "./migrate.js";
 import { run } from "./db-client.js";
 
 export async function seed(): Promise<void> {
-  await initDb();
+  await migrate();
 
   await run(`
     INSERT OR IGNORE INTO users (

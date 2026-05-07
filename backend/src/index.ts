@@ -1,10 +1,10 @@
 import { app } from "./app.js";
-import { initDb } from "./db/init-db.js";
+import { migrate } from "./db/migrate.js";
 
 const PORT = Number(process.env.PORT) || 3000;
 
 async function bootstrap(): Promise<void> {
-  await initDb();
+  await migrate();
 
   app.listen(PORT, () => {
     console.log(`API started on http://localhost:${PORT}`);
