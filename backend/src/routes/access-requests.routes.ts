@@ -11,6 +11,7 @@ import {
   listAccessRequests,
   listAccessRequestsWithUsers,
   replaceAccessRequest,
+  searchAccessRequestsByCommentUnsafe,
   softDeleteAccessRequest,
 } from "../data/access-requests.store.js";
 import { listUsers } from "../data/users.store.js";
@@ -94,6 +95,27 @@ accessRequestsRouter.get(
 
       res.status(200).json({
         items: items.map(toAccessRequestResponseDto),
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+accessRequestsRouter.get(
+  "/search",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const q = typeof req.query.q === "string" ? req.query.q : "";
+
+      const items = await searchAccessRequestsByCommentUnsafe(q);
+
+      res.status(200).json({
+        items: items.map(toAccessRequestResponseDto),
+        meta: {
+          count: items.length,
+          q,
+        },
       });
     } catch (error) {
       next(error);

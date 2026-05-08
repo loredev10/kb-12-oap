@@ -247,3 +247,35 @@ export async function listAccessRequestsWithUsers(
 
   return rows.map(mapAccessRequestWithUserRow);
 }
+
+function logSql(sql: string): void {
+  if (process.env.NODE_ENV !== "production") {
+    console.log("[SQL]", sql.trim());
+  }
+}
+
+export async function searchAccessRequestsByCommentUnsafe(
+  query: string,
+): Promise<AccessRequest[]> {
+  const sql = `
+    SELECT
+      id,
+      user_id,
+      start_date_time,
+      end_date_time,
+      comments,
+      status,
+      is_deleted
+    FROM access_requests
+    WHERE comments LIKE '%${query}%'
+      AND is_deleted = 0
+    ORDER BY id DESC
+    LIMIT 20;
+  `;
+
+  logSql(sql);
+
+  const rows = await all<AccessRequestRow>(sql);
+
+  return rows.map(mapAccessRequestRow);
+}

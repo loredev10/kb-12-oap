@@ -398,3 +398,45 @@ curl -i -X DELETE http://localhost:3000/api/access-requests/1
 ```bash
 curl -i "http://localhost:3000/api/access-requests?status=deleted"
 ```
+
+### Unsafe search endpoint (SQL injection demonstration)
+
+The project contains one intentionally unsafe search endpoint for educational demonstration only:
+
+- `GET /api/access-requests/search?q=...`
+
+It uses string concatenation to build the SQL `WHERE` clause.
+
+Example implementation idea:
+
+```sql
+WHERE comments LIKE '%${q}%'
+```
+
+This is dangerous because user input becomes part of the SQL query text and can change the query logic.
+
+Example request:
+
+```bash
+curl -i --get "http://localhost:3000/api/access-requests/search" \
+  --data-urlencode "q=лабораторія"
+```
+
+curl -i "http://localhost:3000/api/access-requests/search?q=лабораторія"
+
+Example of intentionally bad input for demonstration:
+
+```text
+' OR 1=1 --
+```
+
+```bash
+curl -i --get "http://localhost:3000/api/access-requests/search" \
+  --data-urlencode "q=' OR 1=1 --"
+```
+
+If such input is inserted directly into SQL, it can break the intended filter logic and return more rows than expected.
+
+This endpoint is included only as a learning example for Laboratory Work #3.
+It must be used only locally in the educational project.
+It is intentionally not fixed yet, because protection against SQL injection will be implemented later with parameterized queries.
