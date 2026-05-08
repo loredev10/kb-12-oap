@@ -7,8 +7,8 @@ let editId = null;
 let filters = { search: "", userId: "", status: "active" };
 
 let form, submitBtn, resetBtn;
-let userIdInput, startDateTimeInput, endDateTimeInput, commentsInput;
-let userIdError, startDateTimeError, endDateTimeError, commentsError;
+let userIdInput, startDateTimeInput, endDateTimeInput, statusInput, commentsInput;
+let userIdError, startDateTimeError, endDateTimeError, statusError, commentsError;
 let tableBody, emptyState;
 let confirmPopover;
 let pendingDeleteId = null;
@@ -24,11 +24,13 @@ async function init() {
   userIdInput = document.getElementById("userIdInput");
   startDateTimeInput = document.getElementById("startDateTimeInput");
   endDateTimeInput = document.getElementById("endDateTimeInput");
+  statusInput = document.getElementById("statusInput");
   commentsInput = document.getElementById("commentsInput");
 
   userIdError = document.getElementById("userIdError");
   startDateTimeError = document.getElementById("startDateTimeError");
   endDateTimeError = document.getElementById("endDateTimeError");
+  statusError = document.getElementById("statusError");
   commentsError = document.getElementById("commentsError");
 
   tableBody = document.getElementById("accessRequestsTableBody");
@@ -96,6 +98,9 @@ function onClearFilters() {
 
 function onReset() {
   form.reset();
+  if (statusInput) {
+    statusInput.value = "pending";
+  }
   clearErrors();
   editId = null;
   setSubmitLabel("Додати");
@@ -122,6 +127,9 @@ async function onSubmit(event) {
     render();
 
     form.reset();
+    if (statusInput) {
+      statusInput.value = "pending";
+    }
     clearErrors();
   } catch (error) {
     console.error(error);
@@ -159,6 +167,9 @@ async function onDelete(id) {
     if (editId === id) {
       editId = null;
       form.reset();
+      if (statusInput) {
+        statusInput.value = "pending";
+      }
       clearErrors();
       setSubmitLabel("Додати");
     }
@@ -180,6 +191,9 @@ function onEdit(id) {
   userIdInput.value = String(request.userId);
   startDateTimeInput.value = toDateTimeLocalValue(request.startDateTime);
   endDateTimeInput.value = toDateTimeLocalValue(request.endDateTime);
+  if (statusInput) {
+    statusInput.value = request.status || "pending";
+  }
   commentsInput.value = request.comments || "";
 
   clearErrors();
@@ -251,6 +265,7 @@ function readForm() {
     userId: Number(userIdInput.value),
     startDateTime: startDateTimeInput.value,
     endDateTime: endDateTimeInput.value,
+    status: statusInput ? statusInput.value : "pending",
     comments: commentsInput.value,
   };
 }
@@ -313,6 +328,12 @@ function validate(dto) {
     }
   }
 
+  const allowedStatuses = ["pending", "approved", "rejected"];
+  if (!allowedStatuses.includes(dto.status)) {
+    showError(statusInput, statusError, "Оберіть коректний статус заявки.");
+    isValid = false;
+  }
+
   const comments = dto.comments.trim();
   if (comments === "") {
     showError(commentsInput, commentsError, "Коментар є обов’язковим.");
@@ -344,6 +365,7 @@ function render() {
           <td>${escapeHtml(userName)}</td>
           <td>${escapeHtml(formatDateTime(item.startDateTime))}</td>
           <td>${escapeHtml(formatDateTime(item.endDateTime))}</td>
+          <td>${escapeHtml(formatRequestStatus(item.status))}</td>
           <td>${escapeHtml(item.comments || "")}</td>
           <td>
             <button type="button" class="row-btn" data-action="edit">Редагувати</button>
@@ -491,6 +513,9 @@ function clearErrors() {
   clearFieldError(userIdInput, userIdError);
   clearFieldError(startDateTimeInput, startDateTimeError);
   clearFieldError(endDateTimeInput, endDateTimeError);
+  if (statusInput && statusError) {
+    clearFieldError(statusInput, statusError);
+  }
   clearFieldError(commentsInput, commentsError);
 }
 
@@ -529,6 +554,10 @@ function applyServerValidationErrors(data) {
       showError(endDateTimeInput, endDateTimeError, item.message);
     }
 
+    if (item.field === "status" && statusInput && statusError) {
+      showError(statusInput, statusError, item.message);
+    }
+
     if (item.field === "comments") {
       showError(commentsInput, commentsError, item.message);
     }
@@ -563,6 +592,12 @@ function formatDateTime(value) {
   if (Number.isNaN(date.getTime())) return String(value);
 
   return date.toLocaleString("uk-UA");
+}
+
+function formatRequestStatus(value) {
+  if (value === "approved") return "Approved";
+  if (value === "rejected") return "Rejected";
+  return "Pending";
 }
 
 function escapeHtml(str) {

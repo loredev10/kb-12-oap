@@ -1,4 +1,5 @@
 import type {
+  AccessRequestStatus,
   AccessRequestValidationIssue,
   CreateAccessRequestRequestDto,
   PatchAccessRequestRequestDto,
@@ -6,11 +7,55 @@ import type {
 } from "../types/access-request.js";
 
 const MAX_ACCESS_DURATION_MS = 5 * 60 * 60 * 1000;
+const ACCESS_REQUEST_STATUSES: AccessRequestStatus[] = [
+  "pending",
+  "approved",
+  "rejected",
+];
 
 function normalizeUserId(value: unknown): number {
-  if (typeof value === "number") return value;
-  if (typeof value === "string") return Number(value);
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    return Number(value);
+  }
+
   return Number.NaN;
+}
+
+function normalizeStatus(value: unknown): AccessRequestStatus {
+  if (typeof value !== "string") {
+    return "pending";
+  }
+
+  const normalized = value.trim().toLowerCase();
+
+  if (
+    normalized === "pending" ||
+    normalized === "approved" ||
+    normalized === "rejected"
+  ) {
+    return normalized;
+  }
+
+  return "pending";
+}
+
+function isValidStatus(value: unknown): value is AccessRequestStatus {
+  return (
+    typeof value === "string" &&
+    ACCESS_REQUEST_STATUSES.includes(value as AccessRequestStatus)
+  );
+}
+
+function isValidDateTimeString(value: string): boolean {
+  if (value === "") {
+    return false;
+  }
+
+  return Number.isFinite(Date.parse(value));
 }
 
 export function normalizeCreateAccessRequestRequestDto(
@@ -25,6 +70,7 @@ export function normalizeCreateAccessRequestRequestDto(
     endDateTime:
       typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
     comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
+    status: normalizeStatus(dto.status),
   };
 }
 
@@ -40,6 +86,7 @@ export function normalizeUpdateAccessRequestRequestDto(
     endDateTime:
       typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
     comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
+    status: normalizeStatus(dto.status),
   };
 }
 
@@ -68,6 +115,13 @@ export function normalizePatchAccessRequestRequestDto(
       typeof dto.comments === "string" ? dto.comments.trim() : "";
   }
 
+  if ("status" in dto) {
+    result.status =
+      typeof dto.status === "string"
+        ? (dto.status.trim().toLowerCase() as AccessRequestStatus)
+        : undefined;
+  }
+
   if ("isDeleted" in dto) {
     result.isDeleted =
       typeof dto.isDeleted === "boolean" ? dto.isDeleted : undefined;
@@ -76,18 +130,16 @@ export function normalizePatchAccessRequestRequestDto(
   return result;
 }
 
-function isValidDateTimeString(value: string): boolean {
-  if (value === "") return false;
-  return Number.isFinite(Date.parse(value));
-}
-
 export function validateCreateAccessRequestRequestDto(
   dto: CreateAccessRequestRequestDto,
 ): AccessRequestValidationIssue[] {
   const errors: AccessRequestValidationIssue[] = [];
 
   if (!Number.isInteger(dto.userId) || dto.userId <= 0) {
-    errors.push({ field: "userId", message: "Некоректний userId." });
+    errors.push({
+      field: "userId",
+      message: "Некоректний userId.",
+    });
   }
 
   if (dto.startDateTime === "") {
@@ -136,11 +188,21 @@ export function validateCreateAccessRequestRequestDto(
   }
 
   if (dto.comments === "") {
-    errors.push({ field: "comments", message: "Коментар є обов’язковим." });
+    errors.push({
+      field: "comments",
+      message: "Коментар є обов’язковим.",
+    });
   } else if (dto.comments.length < 3 || dto.comments.length > 300) {
     errors.push({
       field: "comments",
       message: "Коментар має бути від 3 до 300 символів.",
+    });
+  }
+
+  if (!isValidStatus(dto.status)) {
+    errors.push({
+      field: "status",
+      message: "Оберіть коректний статус заявки.",
     });
   }
 
@@ -162,7 +224,10 @@ export function validatePatchAccessRequestRequestDto(
     "userId" in dto &&
     (!Number.isInteger(dto.userId) || (dto.userId ?? 0) <= 0)
   ) {
-    errors.push({ field: "userId", message: "Некоректний userId." });
+    errors.push({
+      field: "userId",
+      message: "Некоректний userId.",
+    });
   }
 
   if ("startDateTime" in dto) {
@@ -195,7 +260,10 @@ export function validatePatchAccessRequestRequestDto(
 
   if ("comments" in dto) {
     if (dto.comments === "") {
-      errors.push({ field: "comments", message: "Коментар є обов’язковим." });
+      errors.push({
+        field: "comments",
+        message: "Коментар є обов’язковим.",
+      });
     } else if (
       (dto.comments?.length ?? 0) < 3 ||
       (dto.comments?.length ?? 0) > 300
@@ -205,6 +273,13 @@ export function validatePatchAccessRequestRequestDto(
         message: "Коментар має бути від 3 до 300 символів.",
       });
     }
+  }
+
+  if ("status" in dto && !isValidStatus(dto.status)) {
+    errors.push({
+      field: "status",
+      message: "Оберіть коректний статус заявки.",
+    });
   }
 
   if ("isDeleted" in dto && typeof dto.isDeleted !== "boolean") {

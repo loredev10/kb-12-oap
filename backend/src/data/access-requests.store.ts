@@ -1,5 +1,8 @@
 import { all, get, run } from "../db/db-client.js";
-import type { AccessRequest } from "../types/access-request.js";
+import type {
+  AccessRequest,
+  AccessRequestStatus,
+} from "../types/access-request.js";
 
 type AccessRequestRow = {
   id: number;
@@ -7,6 +10,7 @@ type AccessRequestRow = {
   start_date_time: string;
   end_date_time: string;
   comments: string;
+  status: string;
   is_deleted: number;
 };
 
@@ -21,6 +25,7 @@ function mapAccessRequestRow(row: AccessRequestRow): AccessRequest {
     startDateTime: row.start_date_time,
     endDateTime: row.end_date_time,
     comments: row.comments,
+    status: row.status as AccessRequestStatus,
     isDeleted: Boolean(row.is_deleted),
   };
 }
@@ -33,6 +38,7 @@ export async function listAccessRequests(): Promise<AccessRequest[]> {
       start_date_time,
       end_date_time,
       comments,
+      status,
       is_deleted
     FROM access_requests
     ORDER BY id DESC;
@@ -51,6 +57,7 @@ export async function findAccessRequestById(
       start_date_time,
       end_date_time,
       comments,
+      status,
       is_deleted
     FROM access_requests
     WHERE id = ${id};
@@ -72,6 +79,7 @@ export async function createAccessRequest(
       start_date_time,
       end_date_time,
       comments,
+      status,
       is_deleted
     )
     VALUES (
@@ -79,6 +87,7 @@ export async function createAccessRequest(
       '${escapeSqlString(data.startDateTime)}',
       '${escapeSqlString(data.endDateTime)}',
       '${escapeSqlString(data.comments)}',
+      '${escapeSqlString(data.status)}',
       ${data.isDeleted ? 1 : 0}
     );
   `);
@@ -102,6 +111,7 @@ export async function replaceAccessRequest(
       start_date_time = '${escapeSqlString(item.startDateTime)}',
       end_date_time = '${escapeSqlString(item.endDateTime)}',
       comments = '${escapeSqlString(item.comments)}',
+      status = '${escapeSqlString(item.status)}',
       is_deleted = ${item.isDeleted ? 1 : 0}
     WHERE id = ${item.id};
   `);

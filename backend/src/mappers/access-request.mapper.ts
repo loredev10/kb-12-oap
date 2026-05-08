@@ -12,5 +12,6 @@ export function toAccessRequestResponseDto(
     startDateTime: accessRequest.startDateTime,
     endDateTime: accessRequest.endDateTime,
     comments: accessRequest.comments,
+    status: accessRequest.status,
   };
 }

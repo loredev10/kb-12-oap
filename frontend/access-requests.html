@@ -39,10 +39,10 @@
     </header>
 
     <nav class="container" style="margin-top: 16px">
-        <div class="card" style="padding: 12px 16px">
-            <a href="/" style="margin-right: 16px">1. Користувачі</a>
-            <a href="/access-requests.html">2. Заявки на доступ</a>
-        </div>
+      <div class="card" style="padding: 12px 16px">
+        <a href="/" style="margin-right: 16px">1. Користувачі</a>
+        <a href="/access-requests.html">2. Заявки на доступ</a>
+      </div>
     </nav>
 
     <main class="container">
@@ -53,7 +53,7 @@
           <div class="field">
             <label for="userIdInput">Користувач</label>
             <select id="userIdInput" name="userId" required>
-                <option value="">Оберіть користувача</option>
+              <option value="">Оберіть користувача</option>
             </select>
             <p class="error-text" id="userIdError"></p>
           </div>
@@ -78,6 +78,16 @@
               required
             />
             <p class="error-text" id="endDateTimeError"></p>
+          </div>
+
+          <div class="field">
+            <label for="statusInput">Статус</label>
+            <select id="statusInput" name="status" required>
+              <option value="pending" selected>Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+            <p class="error-text" id="statusError"></p>
           </div>
 
           <div class="field">
@@ -111,12 +121,12 @@
             />
           </div>
 
-            <div class="control">
-                <label for="userFilter">Фільтр за користувачем</label>
-                <select id="userFilter">
-                    <option value="">Усі користувачі</option>
-                </select>
-            </div>
+          <div class="control">
+            <label for="userFilter">Фільтр за користувачем</label>
+            <select id="userFilter">
+              <option value="">Усі користувачі</option>
+            </select>
+          </div>
 
           <div class="control">
             <span class="label">Статус записів</span>
@@ -143,19 +153,20 @@
 
         <h2>Список заявок</h2>
 
-          <table id="accessRequestsTable">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Користувач</th>
-                <th>Початок</th>
-                <th>Завершення</th>
-                <th>Коментар</th>
-                <th>Дії</th>
-              </tr>
-            </thead>
-            <tbody id="accessRequestsTableBody"></tbody>
-          </table>
+        <table id="accessRequestsTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Користувач</th>
+              <th>Початок</th>
+              <th>Завершення</th>
+              <th>Статус</th>
+              <th>Коментар</th>
+              <th>Дії</th>
+            </tr>
+          </thead>
+          <tbody id="accessRequestsTableBody"></tbody>
+        </table>
 
         <p class="muted" id="emptyState">
           Поки що немає заявок. Додайте першу заявку.

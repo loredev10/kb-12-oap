@@ -195,6 +195,7 @@ accessRequestsRouter.patch(
         startDateTime: merged.startDateTime,
         endDateTime: merged.endDateTime,
         comments: merged.comments,
+        status: merged.status,
       });
 
       if (durationErrors.length > 0) {
