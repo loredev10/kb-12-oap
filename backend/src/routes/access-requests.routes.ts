@@ -5,9 +5,11 @@ import {
   type Response,
 } from "express";
 import {
+  countAccessRequests,
   createAccessRequest,
   findAccessRequestById,
   listAccessRequests,
+  listAccessRequestsWithUsers,
   replaceAccessRequest,
   softDeleteAccessRequest,
 } from "../data/access-requests.store.js";
@@ -30,6 +32,50 @@ import {
 } from "../validators/access-request.validator.js";
 
 export const accessRequestsRouter = Router();
+
+accessRequestsRouter.get(
+  "/stats/count",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const status = parseStatusFilter(req.query.status);
+      const total = await countAccessRequests(status);
+
+      res.status(200).json({
+        data: {
+          total,
+          status,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
+
+accessRequestsRouter.get(
+  "/with-users",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const status = parseStatusFilter(req.query.status);
+      const rawLimit =
+        typeof req.query.limit === "string" ? Number(req.query.limit) : 10;
+      const limit = Number.isFinite(rawLimit) ? rawLimit : 10;
+
+      const items = await listAccessRequestsWithUsers(status, limit);
+
+      res.status(200).json({
+        items,
+        meta: {
+          count: items.length,
+          status,
+          limit: Math.min(Math.max(Math.trunc(limit), 1), 100),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+);
 
 accessRequestsRouter.get(
   "/",

@@ -14,6 +14,32 @@ type AccessRequestRow = {
   is_deleted: number;
 };
 
+export type AccessRequestWithUserRow = {
+  id: number;
+  user_id: number;
+  start_date_time: string;
+  end_date_time: string;
+  comments: string;
+  status: string;
+  is_deleted: number;
+  user_full_name: string;
+  user_email: string;
+  user_role: string;
+};
+
+export type AccessRequestWithUser = {
+  id: number;
+  userId: number;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+  status: AccessRequestStatus;
+  isDeleted: boolean;
+  userFullName: string;
+  userEmail: string;
+  userRole: string;
+};
+
 function escapeSqlString(value: string): string {
   return value.replace(/'/g, "''");
 }
@@ -28,6 +54,49 @@ function mapAccessRequestRow(row: AccessRequestRow): AccessRequest {
     status: row.status as AccessRequestStatus,
     isDeleted: Boolean(row.is_deleted),
   };
+}
+
+function mapAccessRequestWithUserRow(
+  row: AccessRequestWithUserRow,
+): AccessRequestWithUser {
+  return {
+    id: Number(row.id),
+    userId: Number(row.user_id),
+    startDateTime: row.start_date_time,
+    endDateTime: row.end_date_time,
+    comments: row.comments,
+    status: row.status as AccessRequestStatus,
+    isDeleted: Boolean(row.is_deleted),
+    userFullName: row.user_full_name,
+    userEmail: row.user_email,
+    userRole: row.user_role,
+  };
+}
+
+function buildIsDeletedWhereClause(status: "active" | "deleted" | "all"): string {
+  if (status === "deleted") {
+    return "WHERE ar.is_deleted = 1";
+  }
+
+  if (status === "all") {
+    return "";
+  }
+
+  return "WHERE ar.is_deleted = 0";
+}
+
+function buildIsDeletedWhereClauseForCount(
+  status: "active" | "deleted" | "all",
+): string {
+  if (status === "deleted") {
+    return "WHERE is_deleted = 1";
+  }
+
+  if (status === "all") {
+    return "";
+  }
+
+  return "WHERE is_deleted = 0";
 }
 
 export async function listAccessRequests(): Promise<AccessRequest[]> {
@@ -131,4 +200,50 @@ export async function softDeleteAccessRequest(id: number): Promise<boolean> {
   `);
 
   return result.changes > 0;
+}
+
+export async function countAccessRequests(
+  status: "active" | "deleted" | "all",
+): Promise<number> {
+  const whereClause = buildIsDeletedWhereClauseForCount(status);
+
+  const row = await get<{ total: number }>(`
+    SELECT COUNT(*) AS total
+    FROM access_requests
+    ${whereClause};
+  `);
+
+  return Number(row?.total ?? 0);
+}
+
+export async function listAccessRequestsWithUsers(
+  status: "active" | "deleted" | "all",
+  limit: number,
+): Promise<AccessRequestWithUser[]> {
+  const safeLimit = Number.isFinite(limit)
+    ? Math.min(Math.max(Math.trunc(limit), 1), 100)
+    : 10;
+
+  const whereClause = buildIsDeletedWhereClause(status);
+
+  const rows = await all<AccessRequestWithUserRow>(`
+    SELECT
+      ar.id,
+      ar.user_id,
+      ar.start_date_time,
+      ar.end_date_time,
+      ar.comments,
+      ar.status,
+      ar.is_deleted,
+      u.full_name AS user_full_name,
+      u.email AS user_email,
+      u.role AS user_role
+    FROM access_requests ar
+    JOIN users u ON u.id = ar.user_id
+    ${whereClause}
+    ORDER BY ar.id DESC
+    LIMIT ${safeLimit};
+  `);
+
+  return rows.map(mapAccessRequestWithUserRow);
 }

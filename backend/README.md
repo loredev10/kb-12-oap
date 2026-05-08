@@ -194,6 +194,81 @@ Fields:
 - `PATCH /api/approvals/:id` — partially update approval
 - `DELETE /api/approvals/:id` — soft delete approval
 
+### Access Requests analytics and joined data
+
+#### Get access requests count (`COUNT` aggregation)
+
+Returns the number of access requests depending on the selected record status.
+
+Available query param:
+
+- `status=active`
+- `status=deleted`
+- `status=all`
+
+Example:
+
+```bash
+curl -i "http://localhost:3000/api/access-requests/stats/count?status=active"
+```
+
+Example response:
+
+```json
+{
+  "data": {
+    "total": 5,
+    "status": "active"
+  }
+}
+```
+
+#### Get access requests with user data (`JOIN`)
+
+Returns access requests together with related user data.
+
+This endpoint uses SQL `JOIN` between:
+
+- `access_requests`
+- `users`
+
+Available query params:
+
+- `status=active|deleted|all`
+- `limit=1..100`
+
+Example:
+
+```bash
+curl -i "http://localhost:3000/api/access-requests/with-users?status=active&limit=10"
+```
+
+Example response:
+
+```json
+{
+  "items": [
+    {
+      "id": 3,
+      "userId": 2,
+      "startDateTime": "2026-03-20T09:00",
+      "endDateTime": "2026-03-20T12:00",
+      "comments": "Практична робота в лабораторії",
+      "status": "pending",
+      "isDeleted": false,
+      "userFullName": "Олена Петренко",
+      "userEmail": "olena.petrenko@example.com",
+      "userRole": "teacher"
+    }
+  ],
+  "meta": {
+    "count": 1,
+    "status": "active",
+    "limit": 10
+  }
+}
+```
+
 ## API examples
 
 Base server URL:
