@@ -1,6 +1,6 @@
 # Backend
 
-Backend part of the course app for Laboratory Work #3.
+Backend part of the course app for Laboratory Work
 
 ## Stack
 
@@ -57,7 +57,7 @@ From the project root:
 ## Database
 
 - SQLite file is created locally at `backend/data/app.db`
-- The database is not committed to the repository
+- The database file is not committed to the repository
 - Migrations are applied automatically on server start
 - Test data can be added with the seed script
 
@@ -74,6 +74,7 @@ Current migration files:
 - `001_create_users.sql`
 - `002_create_access_requests.sql`
 - `003_add_access_requests_user_id_index.sql`
+- ...
 
 Applied migrations are stored in the `schema_migrations` table.
 
@@ -101,12 +102,29 @@ Fields:
 - `start_date_time` — required start date and time
 - `end_date_time` — required end date and time
 - `comments` — required comment
+- `status` — request status (`pending`, `approved`, `rejected`)
+- `is_deleted` — logical deletion flag
+
+### `approvals`
+
+Fields:
+
+- `id` — primary key
+- `access_request_id` — required foreign key to `access_requests.id`
+- `approved_by_user_id` — required foreign key to `users.id`
+- `decision` — approval decision (`approved`, `rejected`)
+- `comment` — optional explanation or note
+- `approved_at` — required date and time of decision
 - `is_deleted` — logical deletion flag
 
 ## Relations
 
 - One user can have many access requests
+- One access request can have many approvals
+- One user can create many approvals
 - `access_requests.user_id` references `users.id`
+- `approvals.access_request_id` references `access_requests.id`
+- `approvals.approved_by_user_id` references `users.id`
 - Relation type: `1:N`
 
 ## Constraints
@@ -128,10 +146,24 @@ Fields:
 - `start_date_time` — `NOT NULL`
 - `end_date_time` — `NOT NULL`
 - `comments` — `NOT NULL`
+- `status` — `NOT NULL DEFAULT 'pending'`
+- `status` — `CHECK (status IN ('pending', 'approved', 'rejected'))`
 - `is_deleted` — `NOT NULL DEFAULT 0`
 - `is_deleted` — `CHECK (is_deleted IN (0, 1))`
 - `CHECK (end_date_time > start_date_time)`
 - `FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT`
+
+### `approvals`
+
+- `access_request_id` — `NOT NULL`
+- `approved_by_user_id` — `NOT NULL`
+- `decision` — `NOT NULL`
+- `decision` — `CHECK (decision IN ('approved', 'rejected'))`
+- `approved_at` — `NOT NULL`
+- `is_deleted` — `NOT NULL DEFAULT 0`
+- `is_deleted` — `CHECK (is_deleted IN (0, 1))`
+- `FOREIGN KEY (access_request_id) REFERENCES access_requests(id) ON DELETE RESTRICT`
+- `FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
 ## API
 
@@ -152,3 +184,142 @@ Fields:
 - `PUT /api/access-requests/:id` — replace access request
 - `PATCH /api/access-requests/:id` — partially update access request
 - `DELETE /api/access-requests/:id` — soft delete access request
+
+### Approvals
+
+- `GET /api/approvals` — get approval list
+- `GET /api/approvals/:id` — get approval by id
+- `POST /api/approvals` — create approval
+- `PUT /api/approvals/:id` — replace approval
+- `PATCH /api/approvals/:id` — partially update approval
+- `DELETE /api/approvals/:id` — soft delete approval
+
+## API examples
+
+Base server URL:
+
+```text
+http://localhost:3000
+```
+
+### 1. Check `health` endpoint
+
+```bash
+curl -i http://localhost:3000/health
+```
+
+### 2. Get active users
+
+```bash
+curl -i "http://localhost:3000/api/users?status=active"
+```
+
+### 3. Get all users
+
+```bash
+curl -i "http://localhost:3000/api/users?status=all"
+```
+
+### 4. Get user by id
+
+```bash
+curl -i http://localhost:3000/api/users/1
+```
+
+### 5. Create a new user
+
+```bash
+curl -i -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d "{\"fullName\":\"Ірина Мельник\",\"email\":\"iryna.melnyk@example.com\",\"role\":\"student\",\"notes\":\"Потрібен доступ до лабораторії\"}"
+```
+
+### 6. Try to create an invalid user (`400 Bad Request`)
+
+```bash
+curl -i -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d "{\"fullName\":\"\",\"email\":\"bad-email\",\"role\":\"\",\"notes\":\"12\"}"
+```
+
+### 7. Try to create a duplicate user (`409 Conflict`)
+
+```bash
+curl -i -X POST http://localhost:3000/api/users \
+  -H "Content-Type: application/json" \
+  -d "{\"fullName\":\"Ірина Мельник\",\"email\":\"iryna.melnyk@example.com\",\"role\":\"student\",\"notes\":\"Duplicate email test\"}"
+```
+
+### 8. Partially update a user with `PATCH`
+
+```bash
+curl -i -X PATCH http://localhost:3000/api/users/1 \
+  -H "Content-Type: application/json" \
+  -d "{\"notes\":\"Оновлений коментар через PATCH\"}"
+```
+
+### 9. Soft delete a user with `DELETE`
+
+```bash
+curl -i -X DELETE http://localhost:3000/api/users/1
+```
+
+### 10. Get deleted users
+
+```bash
+curl -i "http://localhost:3000/api/users?status=deleted"
+```
+
+### 11. Get active access requests
+
+```bash
+curl -i "http://localhost:3000/api/access-requests?status=active"
+```
+
+### 12. Get all access requests
+
+```bash
+curl -i "http://localhost:3000/api/access-requests?status=all"
+```
+
+### 13. Get access request by id
+
+```bash
+curl -i http://localhost:3000/api/access-requests/1
+```
+
+### 14. Create a new access request
+
+```bash
+curl -i -X POST http://localhost:3000/api/access-requests \
+  -H "Content-Type: application/json" \
+  -d "{\"userId\":2,\"startDateTime\":\"2026-03-20T09:00\",\"endDateTime\":\"2026-03-20T12:00\",\"status\":\"pending\",\"comments\":\"Практична робота в лабораторії\"}"
+```
+
+### 15. Try to create an invalid access request (`400 Bad Request`)
+
+```bash
+curl -i -X POST http://localhost:3000/api/access-requests \
+  -H "Content-Type: application/json" \
+  -d "{\"userId\":2,\"startDateTime\":\"2026-03-20T09:00\",\"endDateTime\":\"2026-03-20T16:30\",\"status\":\"pending\",\"comments\":\"Занадто довгий доступ\"}"
+```
+
+### 16. Partially update an access request with `PATCH`
+
+```bash
+curl -i -X PATCH http://localhost:3000/api/access-requests/1 \
+  -H "Content-Type: application/json" \
+  -d "{\"comments\":\"Оновлена заявка через PATCH\",\"status\":\"approved\"}"
+```
+
+### 17. Soft delete an access request with `DELETE`
+
+```bash
+curl -i -X DELETE http://localhost:3000/api/access-requests/1
+```
+
+### 18. Get deleted access requests
+
+```bash
+curl -i "http://localhost:3000/api/access-requests?status=deleted"
+```

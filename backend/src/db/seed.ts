@@ -35,6 +35,22 @@ export async function seed(): Promise<void> {
       (3, 3, '2026-03-19T10:30', '2026-03-19T13:00', 'Перевірка та налаштування обладнання', 'rejected', 0);
   `);
 
+  await run(`
+    INSERT OR IGNORE INTO approvals (
+      id,
+      access_request_id,
+      approved_by_user_id,
+      decision,
+      comment,
+      approved_at,
+      is_deleted
+    )
+    VALUES
+      (1, 1, 2, 'approved', 'Заявка погоджена викладачем.', '2026-03-18T08:30', 0),
+      (2, 2, 3, 'approved', 'Доступ підтверджено лаборантом.', '2026-03-18T11:30', 0),
+      (3, 3, 2, 'rejected', 'Потрібно уточнити підставу для доступу.', '2026-03-19T09:45', 0);
+  `);
+
   console.log("DB seed completed");
 }
 
