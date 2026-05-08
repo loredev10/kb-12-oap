@@ -6,8 +6,19 @@ import type {
   UserValidationIssue,
 } from "../types/user.js";
 
+const USER_ROLES: UserRole[] = [
+  "student",
+  "teacher",
+  "lab_assistant",
+  "admin",
+];
+
 export function isValidEmail(value: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+export function isValidUserRole(value: string): value is UserRole {
+  return USER_ROLES.includes(value as UserRole);
 }
 
 export function normalizeCreateUserRequestDto(
@@ -18,7 +29,7 @@ export function normalizeCreateUserRequestDto(
   return {
     fullName: typeof dto.fullName === "string" ? dto.fullName.trim() : "",
     email: typeof dto.email === "string" ? dto.email.trim() : "",
-    role: typeof dto.role === "string" ? (dto.role.trim() as UserRole) : "",
+    role: typeof dto.role === "string" ? (dto.role.trim() as UserRole) : ("student" as UserRole),
     notes: typeof dto.notes === "string" ? dto.notes.trim() : "",
   };
 }
@@ -31,7 +42,7 @@ export function normalizeUpdateUserRequestDto(
   return {
     fullName: typeof dto.fullName === "string" ? dto.fullName.trim() : "",
     email: typeof dto.email === "string" ? dto.email.trim() : "",
-    role: typeof dto.role === "string" ? (dto.role.trim() as UserRole) : "",
+    role: typeof dto.role === "string" ? (dto.role.trim() as UserRole) : ("student" as UserRole),
     notes: typeof dto.notes === "string" ? dto.notes.trim() : "",
   };
 }
@@ -53,7 +64,7 @@ export function normalizePatchUserRequestDto(
 
   if ("role" in dto) {
     result.role =
-      typeof dto.role === "string" ? (dto.role.trim() as UserRole) : "";
+      typeof dto.role === "string" ? (dto.role.trim() as UserRole) : undefined;
   }
 
   if ("notes" in dto) {
@@ -88,8 +99,12 @@ export function validateCreateUserRequestDto(
     errors.push({ field: "email", message: "Введіть коректний Email." });
   }
 
-  if (dto.role === "") {
-    errors.push({ field: "role", message: "Оберіть роль." });
+  if (!isValidUserRole(dto.role)) {
+    errors.push({
+      field: "role",
+      message:
+        "Роль має бути однією з таких: student, teacher, lab_assistant, admin.",
+    });
   }
 
   if (dto.notes !== "" && dto.notes.length < 5) {
@@ -136,8 +151,14 @@ export function validatePatchUserRequestDto(
     }
   }
 
-  if ("role" in dto && dto.role === "") {
-    errors.push({ field: "role", message: "Оберіть роль." });
+  if ("role" in dto) {
+    if (dto.role === undefined || !isValidUserRole(dto.role)) {
+      errors.push({
+        field: "role",
+        message:
+          "Роль має бути однією з таких: student, teacher, lab_assistant, admin.",
+      });
+    }
   }
 
   if (

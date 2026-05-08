@@ -10,6 +10,14 @@ type MigrationRow = {
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+function splitSqlStatements(sql: string): string[] {
+  return sql
+    .split(";")
+    .map((part) => part.trim())
+    .filter((part) => part !== "")
+    .map((part) => `${part};`);
+}
+
 export async function migrate(): Promise<void> {
   await run("PRAGMA foreign_keys = ON;");
 
@@ -48,15 +56,29 @@ export async function migrate(): Promise<void> {
       continue;
     }
 
-    await run(sql);
+    const statements = splitSqlStatements(sql);
 
-    const now = new Date().toISOString();
+    try {
+      for (const statement of statements) {
+        await run(statement);
+      }
 
-    await run(`
-      INSERT INTO schema_migrations (filename, applied_at)
-      VALUES ('${file.replace(/'/g, "''")}', '${now}');
-    `);
+      const now = new Date().toISOString();
 
-    console.log(`Migration applied: ${file}`);
+      await run(`
+        INSERT INTO schema_migrations (filename, applied_at)
+        VALUES ('${file.replace(/'/g, "''")}', '${now}');
+      `);
+
+      console.log(`Migration applied: ${file}`);
+    } catch (error) {
+      try {
+        await run("ROLLBACK;");
+      } catch {
+        // якщо транзакція не була відкрита, просто ігноруємо
+      }
+
+      throw error;
+    }
   }
 }
