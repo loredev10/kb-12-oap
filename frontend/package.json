@@ -13,7 +13,7 @@
     "build": "tsc && vite build",
     "preview": "vite preview --host 127.0.0.1 --port 5500",
     "type-check": "tsc --noEmit",
-    "start": "echo \"TODO: add frontend\"",
+    "start": "vite preview --host 127.0.0.1 --port 5500",
     "lint:check": "echo \"TODO: add frontend linting\"",
     "lint:fix": "echo \"TODO: add frontend linting\"",
     "format:check": "echo \"TODO: add frontend formatting\"",

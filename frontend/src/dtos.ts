@@ -1,43 +1,85 @@
 export type UserRole = "student" | "teacher" | "lab_assistant" | "admin";
 
+export type AccessRequestStatus = "pending" | "approved" | "rejected";
+
+export type EntityStatusFilter = "active" | "deleted" | "all";
+
 export interface UserResponseDto {
   id: number;
   fullName: string;
   email: string;
   role: UserRole;
-  notes: string | null;
-  createdAt: string;
-  updatedAt: string;
+  notes: string;
 }
 
 export interface CreateUserRequestDto {
   fullName: string;
   email: string;
   role: UserRole;
-  notes?: string;
+  notes: string;
+}
+
+export interface UpdateUserRequestDto {
+  fullName: string;
+  email: string;
+  role: UserRole;
+  notes: string;
 }
 
 export interface AccessRequestResponseDto {
   id: number;
   userId: number;
-  labName: string;
-  requestedAt: string;
-  status: "pending" | "approved" | "rejected";
-  comments: string | null;
-  createdAt: string;
-  updatedAt: string;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+  status: AccessRequestStatus;
 }
 
-export interface CreateAccessRequestDto {
+export interface AccessRequestWithUserResponseDto {
+  id: number;
   userId: number;
-  labName: string;
-  requestedAt: string;
-  comments?: string;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+  status: AccessRequestStatus;
+  isDeleted: boolean;
+  userFullName: string;
+  userEmail: string;
+  userRole: UserRole;
 }
 
-export interface ApiErrorDto {
-  status: number;
+export interface CreateAccessRequestRequestDto {
+  userId: number;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+  status: AccessRequestStatus;
+}
+
+export interface UpdateAccessRequestRequestDto {
+  userId: number;
+  startDateTime: string;
+  endDateTime: string;
+  comments: string;
+  status: AccessRequestStatus;
+}
+
+export interface ApiValidationIssue {
+  field: string;
   message: string;
-  details?: string;
-  errors?: Record<string, string[]>;
+}
+
+export interface ApiErrorResponseDto {
+  error: {
+    code: string;
+    message: string;
+    details: ApiValidationIssue[] | unknown | null;
+  };
+}
+
+export interface ApiClientError {
+  status: number;
+  code: string;
+  message: string;
+  details: unknown;
 }

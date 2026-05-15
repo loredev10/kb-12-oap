@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ЛР1 – Менеджер заявок на доступ до лабораторії</title>
-    <link rel="stylesheet" href="styles.css" />
-    <script src="main.js" defer></script>
+    <title>Менеджер заявок на доступ до лабораторії</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+    <script type="module" src="/src/users.page.ts"></script>
   </head>
 
   <body>
@@ -89,15 +89,19 @@
               aria-label="Роль"
             >
               <label class="role-option">
-                <input type="radio" name="role" value="Студент" />
+                <input type="radio" name="role" value="student" />
                 <span>Студент</span>
               </label>
               <label class="role-option">
-                <input type="radio" name="role" value="Викладач" />
+                <input type="radio" name="role" value="teacher" />
                 <span>Викладач</span>
               </label>
               <label class="role-option">
-                <input type="radio" name="role" value="Гість" />
+                <input type="radio" name="role" value="lab_assistant" />
+                <span>Лаборант</span>
+              </label>
+              <label class="role-option">
+                <input type="radio" name="role" value="guest" />
                 <span>Гість</span>
               </label>
             </div>
@@ -138,9 +142,10 @@
             <label for="roleFilter">Фільтр за роллю</label>
             <select id="roleFilter">
               <option value="">Оберіть роль</option>
-              <option value="Студент">Студент</option>
-              <option value="Викладач">Викладач</option>
-              <option value="Гість">Гість</option>
+              <option value="student">Студент</option>
+              <option value="teacher">Викладач</option>
+              <option value="lab_assistant">Лаборант</option>
+              <option value="admin">Адміністратор</option>
             </select>
           </div>
 

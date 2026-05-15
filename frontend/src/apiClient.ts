@@ -1,11 +1,20 @@
 import { API_BASE_URL } from "./config";
 import type {
   AccessRequestResponseDto,
-  ApiErrorDto,
-  CreateAccessRequestDto,
+  AccessRequestWithUserResponseDto,
+  ApiClientError,
+  ApiErrorResponseDto,
+  CreateAccessRequestRequestDto,
   CreateUserRequestDto,
+  EntityStatusFilter,
+  UpdateAccessRequestRequestDto,
+  UpdateUserRequestDto,
   UserResponseDto,
 } from "./dtos";
+
+type ItemsResponse<T> = {
+  items: T[];
+};
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
@@ -15,9 +24,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   try {
     response = await fetch(url, options);
   } catch (error) {
-    const apiError: ApiErrorDto = {
+    const apiError: ApiClientError = {
       status: 0,
-      message: "Помилка мережі або CORS",
+      code: "NETWORK_OR_CORS_ERROR",
+      message: "Помилка мережі або CORS.",
       details: error instanceof Error ? error.message : String(error),
     };
 
@@ -31,35 +41,45 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const rawText = await response.text();
 
   if (response.ok) {
-    if (!rawText) {
-      return null as T;
-    }
-
-    return JSON.parse(rawText) as T;
+    return rawText ? (JSON.parse(rawText) as T) : (null as T);
   }
 
-  let payload: unknown = null;
+  let parsedError: ApiErrorResponseDto | null = null;
 
   try {
-    payload = rawText ? JSON.parse(rawText) : null;
+    parsedError = rawText ? (JSON.parse(rawText) as ApiErrorResponseDto) : null;
   } catch {
-    payload = null;
+    parsedError = null;
   }
 
-  const errorPayload = payload as Partial<ApiErrorDto> | null;
-
-  const apiError: ApiErrorDto = {
+  const apiError: ApiClientError = {
     status: response.status,
-    message: errorPayload?.message || "HTTP помилка",
-    details: errorPayload?.details || rawText || `HTTP ${response.status}`,
-    errors: errorPayload?.errors,
+    code: parsedError?.error.code ?? "HTTP_ERROR",
+    message: parsedError?.error.message ?? "HTTP помилка.",
+    details: parsedError?.error.details ?? rawText,
   };
 
   throw apiError;
 }
 
-export async function getUsers(): Promise<UserResponseDto[]> {
-  return request<UserResponseDto[]>("/users");
+function jsonOptions(method: "POST" | "PUT" | "PATCH", body: unknown): RequestInit {
+  return {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  };
+}
+
+export async function getUsers(
+  status: EntityStatusFilter = "active",
+): Promise<UserResponseDto[]> {
+  const response = await request<ItemsResponse<UserResponseDto>>(
+    `/users?status=${encodeURIComponent(status)}`,
+  );
+
+  return response.items;
 }
 
 export async function getUserById(id: number): Promise<UserResponseDto> {
@@ -69,11 +89,14 @@ export async function getUserById(id: number): Promise<UserResponseDto> {
 export async function createUser(
   dto: CreateUserRequestDto,
 ): Promise<UserResponseDto> {
-  return request<UserResponseDto>("/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dto),
-  });
+  return request<UserResponseDto>("/users", jsonOptions("POST", dto));
+}
+
+export async function updateUser(
+  id: number,
+  dto: UpdateUserRequestDto,
+): Promise<UserResponseDto> {
+  return request<UserResponseDto>(`/users/${id}`, jsonOptions("PUT", dto));
 }
 
 export async function deleteUser(id: number): Promise<void> {
@@ -82,16 +105,48 @@ export async function deleteUser(id: number): Promise<void> {
   });
 }
 
-export async function getAccessRequests(): Promise<AccessRequestResponseDto[]> {
-  return request<AccessRequestResponseDto[]>("/access-requests");
+export async function getAccessRequests(
+  status: EntityStatusFilter = "active",
+): Promise<AccessRequestResponseDto[]> {
+  const response = await request<ItemsResponse<AccessRequestResponseDto>>(
+    `/access-requests?status=${encodeURIComponent(status)}`,
+  );
+
+  return response.items;
+}
+
+export async function getAccessRequestsWithUsers(
+  status: EntityStatusFilter = "active",
+  limit = 100,
+): Promise<AccessRequestWithUserResponseDto[]> {
+  const response = await request<ItemsResponse<AccessRequestWithUserResponseDto>>(
+    `/access-requests/with-users?status=${encodeURIComponent(status)}&limit=${limit}`,
+  );
+
+  return response.items;
 }
 
 export async function createAccessRequest(
-  dto: CreateAccessRequestDto,
+  dto: CreateAccessRequestRequestDto,
 ): Promise<AccessRequestResponseDto> {
-  return request<AccessRequestResponseDto>("/access-requests", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(dto),
+  return request<AccessRequestResponseDto>(
+    "/access-requests",
+    jsonOptions("POST", dto),
+  );
+}
+
+export async function updateAccessRequest(
+  id: number,
+  dto: UpdateAccessRequestRequestDto,
+): Promise<AccessRequestResponseDto> {
+  return request<AccessRequestResponseDto>(
+    `/access-requests/${id}`,
+    jsonOptions("PUT", dto),
+  );
+}
+
+export async function deleteAccessRequest(id: number): Promise<void> {
+  return request<void>(`/access-requests/${id}`, {
+    method: "DELETE",
   });
 }
