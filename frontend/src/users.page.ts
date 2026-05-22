@@ -25,6 +25,8 @@ const notesErrorEl = document.querySelector<HTMLElement>("#notesError");
 
 const submitBtnEl = document.querySelector<HTMLButtonElement>("#submitBtn");
 const resetBtnEl = document.querySelector<HTMLButtonElement>("#resetBtn");
+const disableFrontendValidationInputEl =
+  document.querySelector<HTMLInputElement>("#disableFrontendValidationInput");
 
 const searchInputEl = document.querySelector<HTMLInputElement>("#searchInput");
 const roleFilterEl = document.querySelector<HTMLSelectElement>("#roleFilter");
@@ -208,6 +210,10 @@ function validate(dto: CreateUserRequestDto): boolean {
   return isValid;
 }
 
+function isFrontendValidationDisabled(): boolean {
+  return disableFrontendValidationInputEl?.checked ?? false;
+}
+
 function getVisibleUsers(): UserResponseDto[] {
   const search = searchInputEl?.value.trim().toLowerCase() ?? "";
   const role = roleFilterEl?.value ?? "";
@@ -292,9 +298,15 @@ formEl?.addEventListener("submit", async (event) => {
   event.preventDefault();
 
   const dto = readForm();
+  const shouldSkipFrontendValidation = isFrontendValidationDisabled();
 
-  if (!validate(dto)) {
+  if (!shouldSkipFrontendValidation && !validate(dto)) {
     return;
+  }
+
+  if (shouldSkipFrontendValidation) {
+    clearErrors();
+    showMessage("Фронтенд-валідацію вимкнено. Дані відправлено на бекенд для перевірки.");
   }
 
   setFormEnabled(false);
@@ -310,7 +322,7 @@ formEl?.addEventListener("submit", async (event) => {
   } finally {
     setFormEnabled(true);
   }
-});
+});;
 
 resetBtnEl?.addEventListener("click", () => {
   formEl?.reset();
