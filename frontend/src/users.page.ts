@@ -1,18 +1,22 @@
-import { createUser, deleteUser, getUsers } from "./apiClient";
+import { createUser, deleteUser, getUserById, getUsers } from "./apiClient";
 import type {
   ApiClientError,
   CreateUserRequestDto,
+  EntityStatusFilter,
   UserResponseDto,
   UserRole,
 } from "./dtos";
 
 const formEl = document.querySelector<HTMLFormElement>("#userForm");
-const usersTableBodyEl = document.querySelector<HTMLTableSectionElement>("#usersTableBody");
+const usersTableBodyEl =
+  document.querySelector<HTMLTableSectionElement>("#usersTableBody");
 const emptyStateEl = document.querySelector<HTMLElement>("#emptyState");
 
-const fullNameInputEl = document.querySelector<HTMLInputElement>("#fullNameInput");
+const fullNameInputEl =
+  document.querySelector<HTMLInputElement>("#fullNameInput");
 const emailInputEl = document.querySelector<HTMLInputElement>("#emailInput");
-const notesInputEl = document.querySelector<HTMLTextAreaElement>("#notesInput");
+const notesInputEl =
+  document.querySelector<HTMLTextAreaElement>("#notesInput");
 
 const fullNameErrorEl = document.querySelector<HTMLElement>("#fullNameError");
 const emailErrorEl = document.querySelector<HTMLElement>("#emailError");
@@ -24,10 +28,31 @@ const resetBtnEl = document.querySelector<HTMLButtonElement>("#resetBtn");
 
 const searchInputEl = document.querySelector<HTMLInputElement>("#searchInput");
 const roleFilterEl = document.querySelector<HTMLSelectElement>("#roleFilter");
-const statusFilterGroupEl = document.querySelector<HTMLElement>("#statusFilterGroup");
-const clearFiltersBtnEl = document.querySelector<HTMLButtonElement>("#clearFiltersBtn");
+const statusFilterGroupEl =
+  document.querySelector<HTMLElement>("#statusFilterGroup");
+const clearFiltersBtnEl =
+  document.querySelector<HTMLButtonElement>("#clearFiltersBtn");
+
+const userDetailsEl = document.querySelector<HTMLElement>("#userDetails");
+const detailsUserIdEl = document.querySelector<HTMLElement>("#detailsUserId");
+const detailsFullNameEl =
+  document.querySelector<HTMLElement>("#detailsFullName");
+const detailsEmailEl = document.querySelector<HTMLElement>("#detailsEmail");
+const detailsRoleEl = document.querySelector<HTMLElement>("#detailsRole");
+const detailsNotesEl = document.querySelector<HTMLElement>("#detailsNotes");
 
 let usersState: UserResponseDto[] = [];
+
+function formatUserRole(role: UserRole): string {
+  const labels: Record<UserRole, string> = {
+    student: "Студент",
+    teacher: "Викладач",
+    lab_assistant: "Лаборант",
+    admin: "Адміністратор",
+  };
+
+  return labels[role];
+}
 
 function setText(el: HTMLElement | null, text: string): void {
   if (el) {
@@ -49,14 +74,44 @@ function showMessage(text: string): void {
   emptyStateEl.textContent = text;
 }
 
+function hideUserDetails(): void {
+  if (userDetailsEl) {
+    userDetailsEl.hidden = true;
+  }
+}
+
+function renderUserDetails(user: UserResponseDto): void {
+  if (!userDetailsEl) return;
+
+  userDetailsEl.hidden = false;
+
+  setText(detailsUserIdEl, String(user.id));
+  setText(detailsFullNameEl, user.fullName);
+  setText(detailsEmailEl, user.email);
+  setText(detailsRoleEl, formatUserRole(user.role));
+  setText(detailsNotesEl, user.notes || "—");
+}
+
 function getSelectedRole(): CreateUserRequestDto["role"] | "" {
-  const checked = document.querySelector<HTMLInputElement>('input[name="role"]:checked');
+  const checked = document.querySelector<HTMLInputElement>(
+    'input[name="role"]:checked',
+  );
+
   return checked?.value as CreateUserRequestDto["role"] | "";
 }
 
-function getSelectedStatusFilter(): string {
-  const checked = document.querySelector<HTMLInputElement>('input[name="statusFilter"]:checked');
-  return checked?.value ?? "active";
+function getSelectedStatusFilter(): EntityStatusFilter {
+  const checked = document.querySelector<HTMLInputElement>(
+    'input[name="statusFilter"]:checked',
+  );
+
+  const value = checked?.value;
+
+  if (value === "deleted" || value === "all") {
+    return value;
+  }
+
+  return "active";
 }
 
 function readForm(): CreateUserRequestDto {
@@ -91,23 +146,20 @@ function validate(dto: CreateUserRequestDto): boolean {
     isValid = false;
   }
 
+  if (dto.notes !== "" && dto.notes.length < 5) {
+    setText(
+      notesErrorEl,
+      "Коментар має містити мінімум 5 символів або бути порожнім.",
+    );
+    isValid = false;
+  }
+
   if (dto.notes.length > 300) {
     setText(notesErrorEl, "Коментар не може бути довшим за 300 символів.");
     isValid = false;
   }
 
   return isValid;
-}
-
-function formatUserRole(role: UserRole): string {
-  const labels: Record<UserRole, string> = {
-    student: "Студент",
-    teacher: "Викладач",
-    lab_assistant: "Лаборант",
-    admin: "Адміністратор",
-  };
-
-  return labels[role];
 }
 
 function getVisibleUsers(): UserResponseDto[] {
@@ -152,6 +204,7 @@ function renderUsers(): void {
       <td>${formatUserRole(user.role)}</td>
       <td>${user.notes || "—"}</td>
       <td>
+        <button type="button" data-view-user-id="${user.id}">Деталі</button>
         <button type="button" data-delete-user-id="${user.id}">Видалити</button>
       </td>
     `;
@@ -166,12 +219,15 @@ async function loadUsers(): Promise<void> {
   try {
     const status = getSelectedStatusFilter();
     usersState = await getUsers(status);
+
+    hideUserDetails();
     renderUsers();
   } catch (error) {
     usersState = [];
     renderUsers();
+    hideUserDetails();
 
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Помилка (${apiError.status}): ${apiError.message}`);
   }
 }
@@ -203,7 +259,7 @@ formEl?.addEventListener("submit", async (event) => {
     clearErrors();
     await loadUsers();
   } catch (error) {
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Не вдалося створити користувача: ${apiError.message}`);
   } finally {
     setFormEnabled(true);
@@ -217,11 +273,38 @@ resetBtnEl?.addEventListener("click", () => {
 
 usersTableBodyEl?.addEventListener("click", async (event) => {
   const target = event.target as HTMLElement;
-  const button = target.closest<HTMLButtonElement>("[data-delete-user-id]");
 
-  if (!button) return;
+  const viewButton = target.closest<HTMLButtonElement>("[data-view-user-id]");
 
-  const id = Number(button.dataset.deleteUserId);
+  if (viewButton) {
+    const id = Number(viewButton.dataset.viewUserId);
+
+    if (!Number.isFinite(id)) return;
+
+    viewButton.disabled = true;
+
+    try {
+      const user = await getUserById(id);
+      renderUserDetails(user);
+    } catch (error) {
+      const apiError = error as ApiClientError;
+      showMessage(
+        `Не вдалося завантажити деталі користувача: ${apiError.message}`,
+      );
+    } finally {
+      viewButton.disabled = false;
+    }
+
+    return;
+  }
+
+  const deleteButton = target.closest<HTMLButtonElement>(
+    "[data-delete-user-id]",
+  );
+
+  if (!deleteButton) return;
+
+  const id = Number(deleteButton.dataset.deleteUserId);
 
   if (!Number.isFinite(id)) return;
 
@@ -229,21 +312,23 @@ usersTableBodyEl?.addEventListener("click", async (event) => {
 
   if (!confirmed) return;
 
-  button.disabled = true;
+  deleteButton.disabled = true;
 
   try {
     await deleteUser(id);
     await loadUsers();
+    hideUserDetails();
   } catch (error) {
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Не вдалося видалити користувача: ${apiError.message}`);
   } finally {
-    button.disabled = false;
+    deleteButton.disabled = false;
   }
 });
 
 searchInputEl?.addEventListener("input", renderUsers);
 roleFilterEl?.addEventListener("change", renderUsers);
+
 statusFilterGroupEl?.addEventListener("change", () => {
   void loadUsers();
 });

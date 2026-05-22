@@ -62,7 +62,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   throw apiError;
 }
 
-function jsonOptions(method: "POST" | "PUT" | "PATCH", body: unknown): RequestInit {
+function jsonOptions(
+  method: "POST" | "PUT" | "PATCH",
+  body: unknown,
+): RequestInit {
   return {
     method,
     headers: {
