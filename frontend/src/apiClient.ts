@@ -16,6 +16,24 @@ type ItemsResponse<T> = {
   items: T[];
 };
 
+function isApiErrorResponse(value: unknown): value is ApiErrorResponseDto {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+
+  if (!("error" in value)) {
+    return false;
+  }
+
+  const error = (value as { error: unknown }).error;
+
+  if (typeof error !== "object" || error === null) {
+    return false;
+  }
+
+  return "message" in error;
+}
+
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${path}`;
 
@@ -44,19 +62,30 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     return rawText ? (JSON.parse(rawText) as T) : (null as T);
   }
 
-  let parsedError: ApiErrorResponseDto | null = null;
+  let parsedBody: unknown = null;
 
   try {
-    parsedError = rawText ? (JSON.parse(rawText) as ApiErrorResponseDto) : null;
+    parsedBody = rawText ? JSON.parse(rawText) : null;
   } catch {
-    parsedError = null;
+    parsedBody = null;
+  }
+
+  if (isApiErrorResponse(parsedBody)) {
+    const apiError: ApiClientError = {
+      status: response.status,
+      code: parsedBody.error.code,
+      message: parsedBody.error.message,
+      details: parsedBody.error.details,
+    };
+
+    throw apiError;
   }
 
   const apiError: ApiClientError = {
     status: response.status,
-    code: parsedError?.error.code ?? "HTTP_ERROR",
-    message: parsedError?.error.message ?? "HTTP помилка.",
-    details: parsedError?.error.details ?? rawText,
+    code: "HTTP_ERROR",
+    message: "HTTP помилка.",
+    details: rawText || `HTTP ${response.status}`,
   };
 
   throw apiError;

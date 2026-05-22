@@ -67,6 +67,52 @@ function clearErrors(): void {
   setText(notesErrorEl, "");
 }
 
+function formatUnknownDetail(detail: unknown): string {
+  if (typeof detail === "string") {
+    return detail;
+  }
+
+  if (typeof detail === "number" || typeof detail === "boolean") {
+    return String(detail);
+  }
+
+  if (typeof detail === "object" && detail !== null) {
+    if ("field" in detail && "message" in detail) {
+      const field = String((detail as { field: unknown }).field);
+      const message = String((detail as { message: unknown }).message);
+
+      return `${field}: ${message}`;
+    }
+
+    if ("message" in detail) {
+      return String((detail as { message: unknown }).message);
+    }
+
+    return JSON.stringify(detail);
+  }
+
+  return "";
+}
+
+function formatApiError(error: ApiClientError): string {
+  if (Array.isArray(error.details)) {
+    const details = error.details
+      .map((detail) => formatUnknownDetail(detail))
+      .filter(Boolean)
+      .join("; ");
+
+    return details || error.message;
+  }
+
+  const detailText = formatUnknownDetail(error.details);
+
+  if (detailText && detailText !== error.message) {
+    return `${error.message}: ${detailText}`;
+  }
+
+  return error.message;
+}
+
 function showMessage(text: string): void {
   if (!emptyStateEl) return;
 
@@ -228,7 +274,7 @@ async function loadUsers(): Promise<void> {
     hideUserDetails();
 
     const apiError = error as ApiClientError;
-    showMessage(`Помилка (${apiError.status}): ${apiError.message}`);
+    showMessage(`Помилка (${apiError.status}): ${formatApiError(apiError)}`);
   }
 }
 
@@ -260,7 +306,7 @@ formEl?.addEventListener("submit", async (event) => {
     await loadUsers();
   } catch (error) {
     const apiError = error as ApiClientError;
-    showMessage(`Не вдалося створити користувача: ${apiError.message}`);
+    showMessage(`Не вдалося створити користувача: ${formatApiError(apiError)}`);
   } finally {
     setFormEnabled(true);
   }
@@ -289,7 +335,7 @@ usersTableBodyEl?.addEventListener("click", async (event) => {
     } catch (error) {
       const apiError = error as ApiClientError;
       showMessage(
-        `Не вдалося завантажити деталі користувача: ${apiError.message}`,
+        `Не вдалося завантажити деталі користувача: ${formatApiError(apiError)}`,
       );
     } finally {
       viewButton.disabled = false;
@@ -320,7 +366,7 @@ usersTableBodyEl?.addEventListener("click", async (event) => {
     hideUserDetails();
   } catch (error) {
     const apiError = error as ApiClientError;
-    showMessage(`Не вдалося видалити користувача: ${apiError.message}`);
+    showMessage(`Не вдалося видалити користувача: ${formatApiError(apiError)}`);
   } finally {
     deleteButton.disabled = false;
   }
