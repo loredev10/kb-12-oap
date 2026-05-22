@@ -40,7 +40,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(url, options);
+    response = await fetchWithTimeout(url, options);
   } catch (error) {
     const apiError: ApiClientError = {
       status: 0,
@@ -89,6 +89,35 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   };
 
   throw apiError;
+}
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs = 10_000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw {
+        status: 0,
+        code: "REQUEST_TIMEOUT",
+        message: "Запит перевищив таймаут.",
+        details: "Бекенд не відповів протягом 10 секунд.",
+      } satisfies ApiClientError;
+    }
+
+    throw error;
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
 }
 
 function jsonOptions(

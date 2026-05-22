@@ -88,6 +88,13 @@ Format backend code automatically:
 
 - `pnpm format:fix:backend`
 
+## DTO compatibility rules
+
+1. Existing fields used by the frontend must not be renamed or removed in `/api/v1`.
+2. New fields may be added only as optional fields or with default values.
+3. Breaking changes must be introduced only through a new API version, for example `/api/v2`.
+4. The frontend should use fallback values for optional fields, for example `notes || "—"`.
+
 ### Frontend
 
 Run frontend in development mode:
