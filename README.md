@@ -804,39 +804,252 @@ Expected result:
 
 ---
 
-## DevTools verification
+## API request examples for verification
 
-During manual testing, use browser DevTools.
+These examples can be used to verify backend API behavior independently from the frontend.
 
-Open:
+Base API URL:
 
 ```text
-DevTools -> Network -> Fetch/XHR
+http://localhost:3000/api/v1
 ```
 
-Check:
+### Health check
 
-- Request URL;
-- Request Method;
-- Status Code;
-- Response body;
-- CORS headers;
-- failed requests;
-- preflight `OPTIONS` requests for POST/PUT/DELETE.
+```bash
+curl -i http://localhost:3000/health
+```
 
-For CORS verification, check that requests from:
+Expected result:
+
+```text
+HTTP/1.1 200 OK
+```
+
+Response body example:
+
+```json
+{
+  "ok": true
+}
+```
+
+### Get users list
+
+```bash
+curl -i "http://localhost:3000/api/v1/users?status=active"
+```
+
+Expected result:
+
+```text
+HTTP/1.1 200 OK
+```
+
+Response body example:
+
+```json
+{
+  "items": []
+}
+```
+
+### Get user by id
+
+```bash
+curl -i http://localhost:3000/api/v1/users/1
+```
+
+Expected result:
+
+```text
+HTTP/1.1 200 OK
+```
+
+or, if the user does not exist:
+
+```text
+HTTP/1.1 404 Not Found
+```
+
+### Create user
+
+```bash
+curl -i -X POST http://localhost:3000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "Павло Іваненко",
+    "email": "pavlo@example.com",
+    "role": "student",
+    "notes": "Потрібен доступ до лабораторії"
+  }'
+```
+
+Expected result:
+
+```text
+HTTP/1.1 201 Created
+```
+
+### Create user with validation error
+
+```bash
+curl -i -X POST http://localhost:3000/api/v1/users \
+  -H "Content-Type: application/json" \
+  -d '{
+    "fullName": "A",
+    "email": "wrong-email",
+    "role": "",
+    "notes": "abc"
+  }'
+```
+
+Expected result:
+
+```text
+HTTP/1.1 400 Bad Request
+```
+
+Response body example:
+
+```json
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request body",
+    "details": []
+  }
+}
+```
+
+### Delete user
+
+```bash
+curl -i -X DELETE http://localhost:3000/api/v1/users/1
+```
+
+Expected result:
+
+```text
+HTTP/1.1 204 No Content
+```
+
+or, if the user does not exist:
+
+```text
+HTTP/1.1 404 Not Found
+```
+
+### Get access requests with users
+
+```bash
+curl -i "http://localhost:3000/api/v1/access-requests/with-users?status=active&limit=100"
+```
+
+Expected result:
+
+```text
+HTTP/1.1 200 OK
+```
+
+Response body example:
+
+```json
+{
+  "items": []
+}
+```
+
+### Create access request
+
+```bash
+curl -i -X POST http://localhost:3000/api/v1/access-requests \
+  -H "Content-Type: application/json" \
+  -d '{
+    "userId": 1,
+    "startDateTime": "2026-05-15T10:00",
+    "endDateTime": "2026-05-15T12:00",
+    "status": "pending",
+    "comments": "Потрібен доступ для виконання практичної роботи"
+  }'
+```
+
+Expected result:
+
+```text
+HTTP/1.1 201 Created
+```
+
+### Delete access request
+
+```bash
+curl -i -X DELETE http://localhost:3000/api/v1/access-requests/1
+```
+
+Expected result:
+
+```text
+HTTP/1.1 204 No Content
+```
+
+### CORS verification in browser
+
+CORS should be verified from the frontend page, not only with curl.
+
+Start backend:
+
+```bash
+pnpm dev:backend
+```
+
+Start frontend:
+
+```bash
+pnpm dev:frontend
+```
+
+Open:
 
 ```text
 http://127.0.0.1:5500
 ```
 
-to:
+Then open DevTools:
 
 ```text
-http://localhost:3000
+DevTools -> Network -> Fetch/XHR
 ```
 
-are not blocked by the browser.
+Expected result:
+
+- requests to `http://localhost:3000/api/v1/...` are visible;
+- responses have successful HTTP statuses;
+- no CORS error appears in Console.
+
+### Network error scenario
+
+Stop the backend and reload the frontend page.
+
+Expected result:
+
+- frontend shows a network/CORS error;
+- UI does not crash.
+
+### Timeout scenario
+
+If the backend response is delayed for more than 10 seconds, the frontend aborts the request with `AbortController`.
+
+Expected result:
+
+```text
+REQUEST_TIMEOUT
+```
+
+User-facing message:
+
+```text
+Запит перевищив таймаут.
+```
 
 ---
 
