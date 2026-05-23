@@ -40,8 +40,17 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetchWithTimeout(url, options);
+  response = await fetchWithTimeout(url, options);
   } catch (error) {
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "code" in error &&
+      error.code === "REQUEST_TIMEOUT"
+    ) {
+      throw error;
+    }
+
     const apiError: ApiClientError = {
       status: 0,
       code: "NETWORK_OR_CORS_ERROR",
@@ -164,6 +173,10 @@ export async function deleteUser(id: number): Promise<void> {
   return request<void>(`/users/${id}`, {
     method: "DELETE",
   });
+}
+
+export async function testServerError(): Promise<void> {
+  return request<void>("/debug/500");
 }
 
 export async function getAccessRequests(

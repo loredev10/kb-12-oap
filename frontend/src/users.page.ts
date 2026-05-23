@@ -1,4 +1,10 @@
-import { createUser, deleteUser, getUserById, getUsers } from "./apiClient";
+import {
+  createUser,
+  deleteUser,
+  getUserById,
+  getUsers,
+  testServerError,
+} from "./apiClient";
 import type {
   ApiClientError,
   CreateUserRequestDto,
@@ -25,6 +31,7 @@ const notesErrorEl = document.querySelector<HTMLElement>("#notesError");
 
 const submitBtnEl = document.querySelector<HTMLButtonElement>("#submitBtn");
 const resetBtnEl = document.querySelector<HTMLButtonElement>("#resetBtn");
+
 const disableFrontendValidationInputEl =
   document.querySelector<HTMLInputElement>("#disableFrontendValidationInput");
 
@@ -34,6 +41,9 @@ const statusFilterGroupEl =
   document.querySelector<HTMLElement>("#statusFilterGroup");
 const clearFiltersBtnEl =
   document.querySelector<HTMLButtonElement>("#clearFiltersBtn");
+
+const testServerErrorBtnEl =
+  document.querySelector<HTMLButtonElement>("#testServerErrorBtn");
 
 const userDetailsEl = document.querySelector<HTMLElement>("#userDetails");
 const detailsUserIdEl = document.querySelector<HTMLElement>("#detailsUserId");
@@ -113,6 +123,38 @@ function formatApiError(error: ApiClientError): string {
   }
 
   return error.message;
+}
+
+function getRecoveryHint(error: ApiClientError): string {
+  if (error.code === "REQUEST_TIMEOUT") {
+    return "Спробуйте повторити дію пізніше або перевірте, чи бекенд не завис.";
+  }
+
+  if (error.code === "NETWORK_OR_CORS_ERROR") {
+    return "Перевірте, чи запущений бекенд на http://localhost:3000 і чи налаштований CORS.";
+  }
+
+  if (error.status === 500) {
+    return "На сервері сталася внутрішня помилка. Перевірте консоль бекенду.";
+  }
+
+  if (error.status === 400) {
+    return "Перевірте правильність введених даних.";
+  }
+
+  if (error.status === 404) {
+    return "Запис не знайдено. Можливо, його вже видалено.";
+  }
+
+  if (error.status === 409) {
+    return "Перевірте, чи не дублюються унікальні дані, наприклад email.";
+  }
+
+  return "Спробуйте повторити дію або перевірте DevTools → Network.";
+}
+
+function formatUserFriendlyApiError(error: ApiClientError): string {
+  return `${formatApiError(error)} ${getRecoveryHint(error)}`;
 }
 
 function showMessage(text: string): void {
@@ -280,7 +322,9 @@ async function loadUsers(): Promise<void> {
     hideUserDetails();
 
     const apiError = error as ApiClientError;
-    showMessage(`Помилка (${apiError.status}): ${formatApiError(apiError)}`);
+    showMessage(
+      `Помилка (${apiError.status}): ${formatUserFriendlyApiError(apiError)}`,
+    );
   }
 }
 
@@ -306,7 +350,9 @@ formEl?.addEventListener("submit", async (event) => {
 
   if (shouldSkipFrontendValidation) {
     clearErrors();
-    showMessage("Фронтенд-валідацію вимкнено. Дані відправлено на бекенд для перевірки.");
+    showMessage(
+      "Фронтенд-валідацію вимкнено. Дані відправлено на бекенд для перевірки.",
+    );
   }
 
   setFormEnabled(false);
@@ -318,11 +364,13 @@ formEl?.addEventListener("submit", async (event) => {
     await loadUsers();
   } catch (error) {
     const apiError = error as ApiClientError;
-    showMessage(`Не вдалося створити користувача: ${formatApiError(apiError)}`);
+    showMessage(
+      `Не вдалося створити користувача: ${formatUserFriendlyApiError(apiError)}`,
+    );
   } finally {
     setFormEnabled(true);
   }
-});;
+});
 
 resetBtnEl?.addEventListener("click", () => {
   formEl?.reset();
@@ -347,7 +395,7 @@ usersTableBodyEl?.addEventListener("click", async (event) => {
     } catch (error) {
       const apiError = error as ApiClientError;
       showMessage(
-        `Не вдалося завантажити деталі користувача: ${formatApiError(apiError)}`,
+        `Не вдалося завантажити деталі користувача: ${formatUserFriendlyApiError(apiError)}`,
       );
     } finally {
       viewButton.disabled = false;
@@ -378,9 +426,27 @@ usersTableBodyEl?.addEventListener("click", async (event) => {
     hideUserDetails();
   } catch (error) {
     const apiError = error as ApiClientError;
-    showMessage(`Не вдалося видалити користувача: ${formatApiError(apiError)}`);
+    showMessage(
+      `Не вдалося видалити користувача: ${formatUserFriendlyApiError(apiError)}`,
+    );
   } finally {
     deleteButton.disabled = false;
+  }
+});
+
+testServerErrorBtnEl?.addEventListener("click", async () => {
+  testServerErrorBtnEl.disabled = true;
+
+  try {
+    await testServerError();
+  } catch (error) {
+    const apiError = error as ApiClientError;
+
+    showMessage(
+      `Тест поганого сценарію: ${formatUserFriendlyApiError(apiError)}`,
+    );
+  } finally {
+    testServerErrorBtnEl.disabled = false;
   }
 });
 
