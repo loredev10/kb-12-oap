@@ -31,6 +31,12 @@ app.get("/health", (_req: Request, res: Response) => {
   res.status(200).json({ ok: true });
 });
 
+// Educational endpoint for bad scenario testing.
+// It intentionally throws an error to verify that the frontend handles 500 responses.
+app.get("/api/v1/debug/500", (_req: Request, _res: Response) => {
+  throw new Error("Test internal server error for Lab 4");
+});
+
 // API v1 — основні маршрути для ЛР4
 app.use("/api/v1/users", usersRouter);
 app.use("/api/v1/access-requests", accessRequestsRouter);
