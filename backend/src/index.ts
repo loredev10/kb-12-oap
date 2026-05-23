@@ -1,13 +1,12 @@
 import { app } from "./app.js";
+import { appConfig } from "./config/app-config.js";
 import { migrate } from "./db/migrate.js";
-
-const PORT = Number(process.env.PORT) || 3000;
 
 async function bootstrap(): Promise<void> {
   await migrate();
 
-  app.listen(PORT, () => {
-    console.log(`API started on http://localhost:${PORT}`);
+  app.listen(appConfig.port, () => {
+    console.log(`API started on http://localhost:${appConfig.port}`);
   });
 }
 

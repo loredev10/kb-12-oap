@@ -56,10 +56,20 @@ From the project root:
 
 ## Database
 
-- SQLite file is created locally at `backend/data/app.db`
+- By default, the SQLite file is created locally at `backend/data/app.db`
+- The path can be overridden with the `DB_PATH` environment variable
+- A relative `DB_PATH` is resolved from the `backend` directory
 - The database file is not committed to the repository
 - Migrations are applied automatically on server start
 - Test data can be added with the seed script
+
+Examples:
+
+```bash
+pnpm dev
+DB_PATH=data/app.db pnpm dev
+DB_PATH=data/lab5.db pnpm dev
+```
 
 ## Migrations
 
