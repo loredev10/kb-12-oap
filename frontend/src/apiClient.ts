@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "./config";
+import { API_BASE_URL, DEMO_USER_ID } from "./config";
 import type {
   AccessRequestResponseDto,
   AccessRequestWithUserResponseDto,
@@ -109,8 +109,12 @@ async function fetchWithTimeout(
   const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
   try {
+    const headers = new Headers(options.headers);
+    headers.set("X-Demo-UserId", DEMO_USER_ID);
+
     return await fetch(url, {
       ...options,
+      headers,
       signal: controller.signal,
     });
   } catch (error) {

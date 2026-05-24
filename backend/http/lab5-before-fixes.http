@@ -1,0 +1,37 @@
+@baseUrl = http://localhost:3000/api/v1
+@user1 = 1
+@user2 = 2
+
+### 1. Без X-Demo-UserId: middleware має повернути 401
+GET {{baseUrl}}/access-requests/1
+
+### 2. Валідний контекст: користувач 1 читає власну заявку 1
+GET {{baseUrl}}/access-requests/1
+X-Demo-UserId: {{user1}}
+
+### 3. IDOR до виправлення: користувач 1 читає чужу заявку 2
+# Поточний небезпечний результат: 200 OK.
+# Після виправлення цей самий запит має повертати 403 Forbidden.
+GET {{baseUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}
+
+### 4. IDOR до виправлення: користувач 1 може змінити чужу заявку 2
+# Поточний небезпечний результат: 200 OK.
+# Не запускайте запит без потреби: він реально змінює локальні тестові дані.
+PUT {{baseUrl}}/access-requests/2
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "userId": 2,
+  "startDateTime": "2026-03-18T12:00",
+  "endDateTime": "2026-03-18T14:00",
+  "comments": "IDOR demo: змінено користувачем 1",
+  "status": "approved"
+}
+
+### 5. IDOR до виправлення: видалення чужої заявки 2
+# Поточний небезпечний результат: 204 No Content.
+# Запускати лише після seed або на окремій копії БД.
+DELETE {{baseUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}

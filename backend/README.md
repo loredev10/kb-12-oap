@@ -175,6 +175,20 @@ Fields:
 - `FOREIGN KEY (access_request_id) REFERENCES access_requests(id) ON DELETE RESTRICT`
 - `FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
+## Demo user identification for Lab 5
+
+Access-request endpoints require the educational header:
+
+```http
+X-Demo-UserId: 1
+```
+
+The backend verifies that the header contains a positive integer and that the user exists and is not deleted. Missing, invalid, or unknown demo users receive `401 Unauthorized`.
+
+At this intermediate stage, the current user is identified, but ownership checks are intentionally not implemented yet. This keeps the local IDOR scenario reproducible before the security fix. Repeatable requests are stored in:
+
+- `backend/http/lab5-before-fixes.http`
+
 ## API
 
 ### Users

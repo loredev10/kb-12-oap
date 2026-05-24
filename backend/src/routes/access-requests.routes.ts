@@ -16,6 +16,7 @@ import {
 } from "../data/access-requests.store.js";
 import { listUsers } from "../data/users.store.js";
 import { ApiError } from "../errors/api-error.js";
+import { demoAuth } from "../middleware/demo-auth.js";
 import { toAccessRequestResponseDto } from "../mappers/access-request.mapper.js";
 import type {
   AccessRequest,
@@ -33,6 +34,8 @@ import {
 } from "../validators/access-request.validator.js";
 
 export const accessRequestsRouter = Router();
+
+accessRequestsRouter.use(demoAuth);
 
 accessRequestsRouter.get(
   "/stats/count",
