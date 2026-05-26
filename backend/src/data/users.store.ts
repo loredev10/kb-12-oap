@@ -10,10 +10,6 @@ type UserRow = {
   is_deleted: number;
 };
 
-function escapeSqlString(value: string): string {
-  return value.replace(/'/g, "''");
-}
-
 function mapUserRow(row: UserRow): User {
   return {
     id: Number(row.id),
@@ -42,17 +38,20 @@ export async function listUsers(): Promise<User[]> {
 }
 
 export async function findUserById(id: number): Promise<User | undefined> {
-  const row = await get<UserRow>(`
-    SELECT
-      id,
-      full_name,
-      email,
-      role,
-      notes,
-      is_deleted
-    FROM users
-    WHERE id = ${id};
-  `);
+  const row = await get<UserRow>(
+    `
+      SELECT
+        id,
+        full_name,
+        email,
+        role,
+        notes,
+        is_deleted
+      FROM users
+      WHERE id = ?;
+    `,
+    [id],
+  );
 
   if (!row) {
     return undefined;
@@ -61,23 +60,22 @@ export async function findUserById(id: number): Promise<User | undefined> {
   return mapUserRow(row);
 }
 
-export async function createUser(data: Omit<User, "id" | "isDeleted">): Promise<User> {
-  const result = await run(`
-    INSERT INTO users (
-      full_name,
-      email,
-      role,
-      notes,
-      is_deleted
-    )
-    VALUES (
-      '${escapeSqlString(data.fullName)}',
-      '${escapeSqlString(data.email)}',
-      '${escapeSqlString(data.role)}',
-      '${escapeSqlString(data.notes)}',
-      0
-    );
-  `);
+export async function createUser(
+  data: Omit<User, "id" | "isDeleted">,
+): Promise<User> {
+  const result = await run(
+    `
+      INSERT INTO users (
+        full_name,
+        email,
+        role,
+        notes,
+        is_deleted
+      )
+      VALUES (?, ?, ?, ?, 0);
+    `,
+    [data.fullName, data.email, data.role, data.notes],
+  );
 
   const created = await findUserById(result.lastID);
 
@@ -89,16 +87,26 @@ export async function createUser(data: Omit<User, "id" | "isDeleted">): Promise<
 }
 
 export async function replaceUser(item: User): Promise<User | undefined> {
-  const result = await run(`
-    UPDATE users
-    SET
-      full_name = '${escapeSqlString(item.fullName)}',
-      email = '${escapeSqlString(item.email)}',
-      role = '${escapeSqlString(item.role)}',
-      notes = '${escapeSqlString(item.notes)}',
-      is_deleted = ${item.isDeleted ? 1 : 0}
-    WHERE id = ${item.id};
-  `);
+  const result = await run(
+    `
+      UPDATE users
+      SET
+        full_name = ?,
+        email = ?,
+        role = ?,
+        notes = ?,
+        is_deleted = ?
+      WHERE id = ?;
+    `,
+    [
+      item.fullName,
+      item.email,
+      item.role,
+      item.notes,
+      item.isDeleted ? 1 : 0,
+      item.id,
+    ],
+  );
 
   if (result.changes === 0) {
     return undefined;
@@ -126,11 +134,14 @@ export async function patchUser(
 }
 
 export async function softDeleteUser(id: number): Promise<boolean> {
-  const result = await run(`
-    UPDATE users
-    SET is_deleted = 1
-    WHERE id = ${id} AND is_deleted = 0;
-  `);
+  const result = await run(
+    `
+      UPDATE users
+      SET is_deleted = 1
+      WHERE id = ? AND is_deleted = 0;
+    `,
+    [id],
+  );
 
   return result.changes > 0;
 }

@@ -423,44 +423,57 @@ curl -i -X DELETE http://localhost:3000/api/access-requests/1
 curl -i "http://localhost:3000/api/access-requests?status=deleted"
 ```
 
-### Unsafe search endpoint (SQL injection demonstration)
+### SQL injection demonstration from Laboratory Work #3
 
-The project contains one intentionally unsafe search endpoint for educational demonstration only:
+Before the Lab 5 fix, the search endpoint was intentionally unsafe for a local educational demonstration:
 
-- `GET /api/access-requests/search?q=...`
+- `GET /api/v1/access-requests/search?q=...`
 
-It uses string concatenation to build the SQL `WHERE` clause.
-
-Example implementation idea:
+The vulnerable implementation inserted user input directly into the SQL `WHERE` clause:
 
 ```sql
 WHERE comments LIKE '%${q}%'
 ```
 
-This is dangerous because user input becomes part of the SQL query text and can change the query logic.
+This was dangerous because user input became part of the SQL query text and could change the query logic.
 
-Example request:
-
-```bash
-curl -i --get "http://localhost:3000/api/access-requests/search" \
-  --data-urlencode "q=лабораторія"
-```
-
-curl -i "http://localhost:3000/api/access-requests/search?q=лабораторія"
-
-Example of intentionally bad input for demonstration:
+Example of the intentionally bad input used locally before the fix:
 
 ```text
 ' OR 1=1 --
 ```
 
 ```bash
-curl -i --get "http://localhost:3000/api/access-requests/search" \
+curl -i --get "http://localhost:3000/api/v1/access-requests/search" \
+  -H "X-Demo-UserId: 1" \
   --data-urlencode "q=' OR 1=1 --"
 ```
 
-If such input is inserted directly into SQL, it can break the intended filter logic and return more rows than expected.
+Before parameterization, this input could bypass the intended filter and return more rows than expected. The endpoint is now fixed as part of Laboratory Work #5.
 
-This endpoint is included only as a learning example for Laboratory Work #3.
-It must be used only locally in the educational project.
-It is intentionally not fixed yet, because protection against SQL injection will be implemented later with parameterized queries.
+## SQL Injection protection for Lab 5
+
+All values passed to SQLite are bound separately from SQL text through the shared `db-client` helpers:
+
+```ts
+const statement = db.prepare(sql);
+return statement.all(...params);
+```
+
+The access-request search endpoint now uses a placeholder instead of interpolating the search value into SQL:
+
+```sql
+WHERE comments LIKE ?
+```
+
+with the bound parameter:
+
+```ts
+[`%${query}%`]
+```
+
+The same approach is used for `SELECT`, `INSERT`, `UPDATE`, soft-delete operations, migration metadata, and `LIMIT` values. SQL fragments that remain dynamic are selected only from fixed internal branches, not copied from request input.
+
+Repeatable requests for the fixed SQLi scenario are stored in:
+
+- `backend/http/lab5-after-sqli-fix.http`

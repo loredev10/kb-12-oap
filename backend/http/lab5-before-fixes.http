@@ -35,3 +35,13 @@ X-Demo-UserId: {{user1}}
 # Запускати лише після seed або на окремій копії БД.
 DELETE {{baseUrl}}/access-requests/2
 X-Demo-UserId: {{user1}}
+
+### 6. SQLi до виправлення: звичайний пошук за коментарем
+GET {{baseUrl}}/access-requests/search?q=заняття
+X-Demo-UserId: {{user1}}
+
+### 7. SQLi до виправлення: ввід змінює структуру SQL-запиту
+# Небезпечний результат до параметризації: фільтр обходиться і повертаються зайві записи.
+# Payload після URL-декодування: ' OR 1=1 --
+GET {{baseUrl}}/access-requests/search?q=%27%20OR%201%3D1%20--%20
+X-Demo-UserId: {{user1}}

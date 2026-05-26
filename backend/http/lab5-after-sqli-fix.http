@@ -1,0 +1,16 @@
+@baseUrl = http://localhost:3000/api/v1
+@user1 = 1
+
+### 1. SQLi після виправлення: звичайний пошук працює
+GET {{baseUrl}}/access-requests/search?q=заняття
+X-Demo-UserId: {{user1}}
+
+### 2. SQLi після виправлення: той самий payload сприймається як звичайний текст
+# Очікувано: 200 OK і порожній items, якщо такого буквального коментаря немає.
+# Payload після URL-декодування: ' OR 1=1 --
+GET {{baseUrl}}/access-requests/search?q=%27%20OR%201%3D1%20--%20
+X-Demo-UserId: {{user1}}
+
+### 3. SQLi після виправлення: порожній пошук не падає
+GET {{baseUrl}}/access-requests/search?q=
+X-Demo-UserId: {{user1}}

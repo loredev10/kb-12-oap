@@ -1,4 +1,4 @@
-import { all, get, run } from "../db/db-client.js";
+import { all, get, run, type SqlParameter } from "../db/db-client.js";
 import type {
   AccessRequest,
   AccessRequestStatus,
@@ -39,10 +39,6 @@ export type AccessRequestWithUser = {
   userEmail: string;
   userRole: string;
 };
-
-function escapeSqlString(value: string): string {
-  return value.replace(/'/g, "''");
-}
 
 function mapAccessRequestRow(row: AccessRequestRow): AccessRequest {
   return {
@@ -119,18 +115,21 @@ export async function listAccessRequests(): Promise<AccessRequest[]> {
 export async function findAccessRequestById(
   id: number,
 ): Promise<AccessRequest | undefined> {
-  const row = await get<AccessRequestRow>(`
-    SELECT
-      id,
-      user_id,
-      start_date_time,
-      end_date_time,
-      comments,
-      status,
-      is_deleted
-    FROM access_requests
-    WHERE id = ${id};
-  `);
+  const row = await get<AccessRequestRow>(
+    `
+      SELECT
+        id,
+        user_id,
+        start_date_time,
+        end_date_time,
+        comments,
+        status,
+        is_deleted
+      FROM access_requests
+      WHERE id = ?;
+    `,
+    [id],
+  );
 
   if (!row) {
     return undefined;
@@ -142,24 +141,27 @@ export async function findAccessRequestById(
 export async function createAccessRequest(
   data: Omit<AccessRequest, "id">,
 ): Promise<AccessRequest> {
-  const result = await run(`
-    INSERT INTO access_requests (
-      user_id,
-      start_date_time,
-      end_date_time,
-      comments,
-      status,
-      is_deleted
-    )
-    VALUES (
-      ${data.userId},
-      '${escapeSqlString(data.startDateTime)}',
-      '${escapeSqlString(data.endDateTime)}',
-      '${escapeSqlString(data.comments)}',
-      '${escapeSqlString(data.status)}',
-      ${data.isDeleted ? 1 : 0}
-    );
-  `);
+  const result = await run(
+    `
+      INSERT INTO access_requests (
+        user_id,
+        start_date_time,
+        end_date_time,
+        comments,
+        status,
+        is_deleted
+      )
+      VALUES (?, ?, ?, ?, ?, ?);
+    `,
+    [
+      data.userId,
+      data.startDateTime,
+      data.endDateTime,
+      data.comments,
+      data.status,
+      data.isDeleted ? 1 : 0,
+    ],
+  );
 
   const created = await findAccessRequestById(result.lastID);
 
@@ -173,17 +175,28 @@ export async function createAccessRequest(
 export async function replaceAccessRequest(
   item: AccessRequest,
 ): Promise<AccessRequest | undefined> {
-  const result = await run(`
-    UPDATE access_requests
-    SET
-      user_id = ${item.userId},
-      start_date_time = '${escapeSqlString(item.startDateTime)}',
-      end_date_time = '${escapeSqlString(item.endDateTime)}',
-      comments = '${escapeSqlString(item.comments)}',
-      status = '${escapeSqlString(item.status)}',
-      is_deleted = ${item.isDeleted ? 1 : 0}
-    WHERE id = ${item.id};
-  `);
+  const result = await run(
+    `
+      UPDATE access_requests
+      SET
+        user_id = ?,
+        start_date_time = ?,
+        end_date_time = ?,
+        comments = ?,
+        status = ?,
+        is_deleted = ?
+      WHERE id = ?;
+    `,
+    [
+      item.userId,
+      item.startDateTime,
+      item.endDateTime,
+      item.comments,
+      item.status,
+      item.isDeleted ? 1 : 0,
+      item.id,
+    ],
+  );
 
   if (result.changes === 0) {
     return undefined;
@@ -193,11 +206,14 @@ export async function replaceAccessRequest(
 }
 
 export async function softDeleteAccessRequest(id: number): Promise<boolean> {
-  const result = await run(`
-    UPDATE access_requests
-    SET is_deleted = 1
-    WHERE id = ${id} AND is_deleted = 0;
-  `);
+  const result = await run(
+    `
+      UPDATE access_requests
+      SET is_deleted = 1
+      WHERE id = ? AND is_deleted = 0;
+    `,
+    [id],
+  );
 
   return result.changes > 0;
 }
@@ -226,35 +242,39 @@ export async function listAccessRequestsWithUsers(
 
   const whereClause = buildIsDeletedWhereClause(status);
 
-  const rows = await all<AccessRequestWithUserRow>(`
-    SELECT
-      ar.id,
-      ar.user_id,
-      ar.start_date_time,
-      ar.end_date_time,
-      ar.comments,
-      ar.status,
-      ar.is_deleted,
-      u.full_name AS user_full_name,
-      u.email AS user_email,
-      u.role AS user_role
-    FROM access_requests ar
-    JOIN users u ON u.id = ar.user_id
-    ${whereClause}
-    ORDER BY ar.id DESC
-    LIMIT ${safeLimit};
-  `);
+  const rows = await all<AccessRequestWithUserRow>(
+    `
+      SELECT
+        ar.id,
+        ar.user_id,
+        ar.start_date_time,
+        ar.end_date_time,
+        ar.comments,
+        ar.status,
+        ar.is_deleted,
+        u.full_name AS user_full_name,
+        u.email AS user_email,
+        u.role AS user_role
+      FROM access_requests ar
+      JOIN users u ON u.id = ar.user_id
+      ${whereClause}
+      ORDER BY ar.id DESC
+      LIMIT ?;
+    `,
+    [safeLimit],
+  );
 
   return rows.map(mapAccessRequestWithUserRow);
 }
 
-function logSql(sql: string): void {
+function logSql(sql: string, params: SqlParameter[]): void {
   if (process.env.NODE_ENV !== "production") {
     console.log("[SQL]", sql.trim());
+    console.log("[SQL params]", params);
   }
 }
 
-export async function searchAccessRequestsByCommentUnsafe(
+export async function searchAccessRequestsByComment(
   query: string,
 ): Promise<AccessRequest[]> {
   const sql = `
@@ -267,15 +287,17 @@ export async function searchAccessRequestsByCommentUnsafe(
       status,
       is_deleted
     FROM access_requests
-    WHERE comments LIKE '%${query}%'
+    WHERE comments LIKE ?
       AND is_deleted = 0
     ORDER BY id DESC
     LIMIT 20;
   `;
 
-  logSql(sql);
+  const params = [`%${query}%`];
 
-  const rows = await all<AccessRequestRow>(sql);
+  logSql(sql, params);
+
+  const rows = await all<AccessRequestRow>(sql, params);
 
   return rows.map(mapAccessRequestRow);
 }

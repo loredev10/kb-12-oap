@@ -11,7 +11,7 @@ import {
   listAccessRequests,
   listAccessRequestsWithUsers,
   replaceAccessRequest,
-  searchAccessRequestsByCommentUnsafe,
+  searchAccessRequestsByComment,
   softDeleteAccessRequest,
 } from "../data/access-requests.store.js";
 import { listUsers } from "../data/users.store.js";
@@ -111,7 +111,7 @@ accessRequestsRouter.get(
     try {
       const q = typeof req.query.q === "string" ? req.query.q : "";
 
-      const items = await searchAccessRequestsByCommentUnsafe(q);
+      const items = await searchAccessRequestsByComment(q);
 
       res.status(200).json({
         items: items.map(toAccessRequestResponseDto),

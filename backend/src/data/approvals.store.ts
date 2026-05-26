@@ -1,5 +1,9 @@
 import { all, get, run } from "../db/db-client.js";
-import type { Approval, ApprovalDecision, PatchApprovalRequestDto } from "../types/approval.js";
+import type {
+  Approval,
+  ApprovalDecision,
+  PatchApprovalRequestDto,
+} from "../types/approval.js";
 
 type ApprovalRow = {
   id: number;
@@ -10,10 +14,6 @@ type ApprovalRow = {
   approved_at: string;
   is_deleted: number;
 };
-
-function escapeSqlString(value: string): string {
-  return value.replace(/'/g, "''");
-}
 
 function mapApprovalRow(row: ApprovalRow): Approval {
   return {
@@ -44,19 +44,24 @@ export async function listApprovals(): Promise<Approval[]> {
   return rows.map(mapApprovalRow);
 }
 
-export async function findApprovalById(id: number): Promise<Approval | undefined> {
-  const row = await get<ApprovalRow>(`
-    SELECT
-      id,
-      access_request_id,
-      approved_by_user_id,
-      decision,
-      comment,
-      approved_at,
-      is_deleted
-    FROM approvals
-    WHERE id = ${id};
-  `);
+export async function findApprovalById(
+  id: number,
+): Promise<Approval | undefined> {
+  const row = await get<ApprovalRow>(
+    `
+      SELECT
+        id,
+        access_request_id,
+        approved_by_user_id,
+        decision,
+        comment,
+        approved_at,
+        is_deleted
+      FROM approvals
+      WHERE id = ?;
+    `,
+    [id],
+  );
 
   if (!row) {
     return undefined;
@@ -68,24 +73,26 @@ export async function findApprovalById(id: number): Promise<Approval | undefined
 export async function createApproval(
   data: Omit<Approval, "id" | "isDeleted">,
 ): Promise<Approval> {
-  const result = await run(`
-    INSERT INTO approvals (
-      access_request_id,
-      approved_by_user_id,
-      decision,
-      comment,
-      approved_at,
-      is_deleted
-    )
-    VALUES (
-      ${data.accessRequestId},
-      ${data.approvedByUserId},
-      '${escapeSqlString(data.decision)}',
-      '${escapeSqlString(data.comment)}',
-      '${escapeSqlString(data.approvedAt)}',
-      0
-    );
-  `);
+  const result = await run(
+    `
+      INSERT INTO approvals (
+        access_request_id,
+        approved_by_user_id,
+        decision,
+        comment,
+        approved_at,
+        is_deleted
+      )
+      VALUES (?, ?, ?, ?, ?, 0);
+    `,
+    [
+      data.accessRequestId,
+      data.approvedByUserId,
+      data.decision,
+      data.comment,
+      data.approvedAt,
+    ],
+  );
 
   const created = await findApprovalById(result.lastID);
 
@@ -96,18 +103,31 @@ export async function createApproval(
   return created;
 }
 
-export async function replaceApproval(item: Approval): Promise<Approval | undefined> {
-  const result = await run(`
-    UPDATE approvals
-    SET
-      access_request_id = ${item.accessRequestId},
-      approved_by_user_id = ${item.approvedByUserId},
-      decision = '${escapeSqlString(item.decision)}',
-      comment = '${escapeSqlString(item.comment)}',
-      approved_at = '${escapeSqlString(item.approvedAt)}',
-      is_deleted = ${item.isDeleted ? 1 : 0}
-    WHERE id = ${item.id};
-  `);
+export async function replaceApproval(
+  item: Approval,
+): Promise<Approval | undefined> {
+  const result = await run(
+    `
+      UPDATE approvals
+      SET
+        access_request_id = ?,
+        approved_by_user_id = ?,
+        decision = ?,
+        comment = ?,
+        approved_at = ?,
+        is_deleted = ?
+      WHERE id = ?;
+    `,
+    [
+      item.accessRequestId,
+      item.approvedByUserId,
+      item.decision,
+      item.comment,
+      item.approvedAt,
+      item.isDeleted ? 1 : 0,
+      item.id,
+    ],
+  );
 
   if (result.changes === 0) {
     return undefined;
@@ -135,11 +155,14 @@ export async function patchApproval(
 }
 
 export async function softDeleteApproval(id: number): Promise<boolean> {
-  const result = await run(`
-    UPDATE approvals
-    SET is_deleted = 1
-    WHERE id = ${id} AND is_deleted = 0;
-  `);
+  const result = await run(
+    `
+      UPDATE approvals
+      SET is_deleted = 1
+      WHERE id = ? AND is_deleted = 0;
+    `,
+    [id],
+  );
 
   return result.changes > 0;
 }

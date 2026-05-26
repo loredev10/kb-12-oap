@@ -65,10 +65,13 @@ export async function migrate(): Promise<void> {
 
       const now = new Date().toISOString();
 
-      await run(`
-        INSERT INTO schema_migrations (filename, applied_at)
-        VALUES ('${file.replace(/'/g, "''")}', '${now}');
-      `);
+      await run(
+        `
+          INSERT INTO schema_migrations (filename, applied_at)
+          VALUES (?, ?);
+        `,
+        [file, now],
+      );
 
       console.log(`Migration applied: ${file}`);
     } catch (error) {
