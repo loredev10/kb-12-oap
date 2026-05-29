@@ -272,12 +272,36 @@ function getVisibleUsers(): UserResponseDto[] {
   });
 }
 
+function createTextCell(value: string | number): HTMLTableCellElement {
+  const cell = document.createElement("td");
+  cell.textContent = String(value);
+  return cell;
+}
+
+function createUserActionsCell(userId: number): HTMLTableCellElement {
+  const cell = document.createElement("td");
+  const detailsButton = document.createElement("button");
+  const deleteButton = document.createElement("button");
+
+  detailsButton.type = "button";
+  detailsButton.dataset.viewUserId = String(userId);
+  detailsButton.textContent = "Деталі";
+
+  deleteButton.type = "button";
+  deleteButton.dataset.deleteUserId = String(userId);
+  deleteButton.textContent = "Видалити";
+
+  cell.append(detailsButton, deleteButton);
+
+  return cell;
+}
+
 function renderUsers(): void {
   if (!usersTableBodyEl) return;
 
   const visibleUsers = getVisibleUsers();
 
-  usersTableBodyEl.innerHTML = "";
+  usersTableBodyEl.replaceChildren();
 
   if (visibleUsers.length === 0) {
     showMessage("Поки що немає записів або нічого не знайдено.");
@@ -291,17 +315,14 @@ function renderUsers(): void {
   for (const user of visibleUsers) {
     const tr = document.createElement("tr");
 
-    tr.innerHTML = `
-      <td>${user.id}</td>
-      <td>${user.fullName}</td>
-      <td>${user.email}</td>
-      <td>${formatUserRole(user.role)}</td>
-      <td>${user.notes || "—"}</td>
-      <td>
-        <button type="button" data-view-user-id="${user.id}">Деталі</button>
-        <button type="button" data-delete-user-id="${user.id}">Видалити</button>
-      </td>
-    `;
+    tr.append(
+      createTextCell(user.id),
+      createTextCell(user.fullName),
+      createTextCell(user.email),
+      createTextCell(formatUserRole(user.role)),
+      createTextCell(user.notes || "—"),
+      createUserActionsCell(user.id),
+    );
 
     usersTableBodyEl.appendChild(tr);
   }

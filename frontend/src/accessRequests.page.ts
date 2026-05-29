@@ -6,8 +6,9 @@ import {
 } from "./apiClient";
 import type {
   AccessRequestResponseDto,
-  ApiErrorDto,
-  CreateAccessRequestDto,
+  ApiClientError,
+  CreateAccessRequestRequestDto,
+  EntityStatusFilter,
   UserResponseDto,
 } from "./dtos";
 
@@ -59,9 +60,17 @@ function clearErrors(): void {
   setText(commentsErrorEl, "");
 }
 
-function getSelectedStatusFilter(): string {
-  const checked = document.querySelector<HTMLInputElement>('input[name="statusFilter"]:checked');
-  return checked?.value ?? "active";
+function getSelectedStatusFilter(): EntityStatusFilter {
+  const checked = document.querySelector<HTMLInputElement>(
+    'input[name="statusFilter"]:checked',
+  );
+  const value = checked?.value;
+
+  if (value === "deleted" || value === "all") {
+    return value;
+  }
+
+  return "active";
 }
 
 function getUserNameById(userId: number): string {
@@ -69,31 +78,53 @@ function getUserNameById(userId: number): string {
   return user?.fullName ?? String(userId);
 }
 
-function fillUsersSelects(): void {
-  const optionsHtml = usersState
-    .map((user) => `<option value="${user.id}">${user.fullName} (${user.email})</option>`)
-    .join("");
+function appendOption(
+  select: HTMLSelectElement,
+  value: string,
+  label: string,
+): void {
+  const option = document.createElement("option");
+  option.value = value;
+  option.textContent = label;
+  select.appendChild(option);
+}
 
+function fillUsersSelects(): void {
   if (userIdInputEl) {
-    userIdInputEl.innerHTML = `<option value="">Оберіть користувача</option>${optionsHtml}`;
+    userIdInputEl.replaceChildren();
+    appendOption(userIdInputEl, "", "Оберіть користувача");
   }
 
   if (userFilterEl) {
-    userFilterEl.innerHTML = `<option value="">Усі користувачі</option>${optionsHtml}`;
+    userFilterEl.replaceChildren();
+    appendOption(userFilterEl, "", "Усі користувачі");
+  }
+
+  for (const user of usersState) {
+    const label = `${user.fullName} (${user.email})`;
+
+    if (userIdInputEl) {
+      appendOption(userIdInputEl, String(user.id), label);
+    }
+
+    if (userFilterEl) {
+      appendOption(userFilterEl, String(user.id), label);
+    }
   }
 }
 
-function readForm(): CreateAccessRequestDto {
+function readForm(): CreateAccessRequestRequestDto {
   return {
     userId: Number(userIdInputEl?.value ?? 0),
     startDateTime: startDateTimeInputEl?.value.trim() ?? "",
     endDateTime: endDateTimeInputEl?.value.trim() ?? "",
-    status: (statusInputEl?.value ?? "pending") as CreateAccessRequestDto["status"],
+    status: (statusInputEl?.value ??
+      "pending") as CreateAccessRequestRequestDto["status"],
     comments: commentsInputEl?.value.trim() ?? "",
   };
 }
 
-function validate(dto: CreateAccessRequestDto): boolean {
+function validate(dto: CreateAccessRequestRequestDto): boolean {
   clearErrors();
 
   let isValid = true;
@@ -163,12 +194,31 @@ function getVisibleRequests(): AccessRequestResponseDto[] {
   });
 }
 
+function createTextCell(value: string | number): HTMLTableCellElement {
+  const cell = document.createElement("td");
+  cell.textContent = String(value);
+  return cell;
+}
+
+function createRequestActionsCell(requestId: number): HTMLTableCellElement {
+  const cell = document.createElement("td");
+  const deleteButton = document.createElement("button");
+
+  deleteButton.type = "button";
+  deleteButton.dataset.deleteRequestId = String(requestId);
+  deleteButton.textContent = "Видалити";
+
+  cell.appendChild(deleteButton);
+
+  return cell;
+}
+
 function renderRequests(): void {
   if (!tableBodyEl) return;
 
   const visibleRequests = getVisibleRequests();
 
-  tableBodyEl.innerHTML = "";
+  tableBodyEl.replaceChildren();
 
   if (visibleRequests.length === 0) {
     showMessage("Поки що немає заявок або нічого не знайдено.");
@@ -182,17 +232,15 @@ function renderRequests(): void {
   for (const request of visibleRequests) {
     const tr = document.createElement("tr");
 
-    tr.innerHTML = `
-      <td>${request.id}</td>
-      <td>${request.userFullName ?? getUserNameById(request.userId)}</td>
-      <td>${request.startDateTime}</td>
-      <td>${request.endDateTime}</td>
-      <td>${request.status}</td>
-      <td>${request.comments || "—"}</td>
-      <td>
-        <button type="button" data-delete-request-id="${request.id}">Видалити</button>
-      </td>
-    `;
+    tr.append(
+      createTextCell(request.id),
+      createTextCell(getUserNameById(request.userId)),
+      createTextCell(request.startDateTime),
+      createTextCell(request.endDateTime),
+      createTextCell(request.status),
+      createTextCell(request.comments || "—"),
+      createRequestActionsCell(request.id),
+    );
 
     tableBodyEl.appendChild(tr);
   }
@@ -214,7 +262,7 @@ async function loadRequests(): Promise<void> {
     requestsState = [];
     renderRequests();
 
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Помилка (${apiError.status}): ${apiError.message}`);
   }
 }
@@ -251,7 +299,7 @@ formEl?.addEventListener("submit", async (event) => {
     clearErrors();
     await loadRequests();
   } catch (error) {
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Не вдалося створити заявку: ${apiError.message}`);
   } finally {
     setFormEnabled(true);
@@ -288,7 +336,7 @@ tableBodyEl?.addEventListener("click", async (event) => {
     await deleteAccessRequest(id);
     await loadRequests();
   } catch (error) {
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Не вдалося видалити заявку: ${apiError.message}`);
   } finally {
     button.disabled = false;
@@ -321,7 +369,7 @@ async function initPage(): Promise<void> {
     await loadUsersForSelects();
     await loadRequests();
   } catch (error) {
-    const apiError = error as ApiErrorDto;
+    const apiError = error as ApiClientError;
     showMessage(`Не вдалося завантажити сторінку: ${apiError.message}`);
   }
 }

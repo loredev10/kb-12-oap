@@ -1,0 +1,22 @@
+@baseUrl = http://localhost:3000/api/v1
+@user1 = 1
+
+### XSS: створити заявку з безпечним HTML-маркером
+# До виправлення фронтенду рядок інтерпретується як HTML і LAB5-XSS
+# відображається жирним текстом. Після виправлення рядок має бути
+# показаний буквально разом із тегами <strong>...</strong>.
+POST {{baseUrl}}/access-requests
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "userId": 1,
+  "startDateTime": "2026-06-04T10:00",
+  "endDateTime": "2026-06-04T11:00",
+  "comments": "<strong id=\"lab5-xss-marker\">LAB5-XSS</strong>",
+  "status": "pending"
+}
+
+### XSS: отримати заявки, потім відкрити сторінку frontend/access-requests.html
+GET {{baseUrl}}/access-requests?status=active
+X-Demo-UserId: {{user1}}

@@ -418,3 +418,16 @@ src/dtos.ts
 ```
 
 This structure is intentionally simple and is suitable for Lab 4.
+## ЛР5: перевірка захисту від Stored XSS
+
+Для демонстрації використовується поле `comments` у заявці на доступ.
+Створіть заявку з HTML-маркером через форму або запит із файлу
+`backend/http/lab5-after-xss-fix.http`:
+
+```html
+<strong id="lab5-xss-marker">LAB5-XSS</strong>
+```
+
+До виправлення рядок, вставлений через `innerHTML`, інтерпретувався браузером
+як розмітка. Після виправлення користувацькі дані вставляються через
+`textContent`, тому маркер відображається буквально як текст разом із тегами.
