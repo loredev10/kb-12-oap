@@ -13,21 +13,9 @@ const ACCESS_REQUEST_STATUSES: AccessRequestStatus[] = [
   "rejected",
 ];
 
-function normalizeUserId(value: unknown): number {
-  if (typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "string") {
-    return Number(value);
-  }
-
-  return Number.NaN;
-}
-
 function normalizeStatus(value: unknown): AccessRequestStatus {
   if (typeof value !== "string") {
-    return "pending";
+    return "" as AccessRequestStatus;
   }
 
   const normalized = value.trim().toLowerCase();
@@ -40,7 +28,7 @@ function normalizeStatus(value: unknown): AccessRequestStatus {
     return normalized;
   }
 
-  return "pending";
+  return "" as AccessRequestStatus;
 }
 
 function isValidStatus(value: unknown): value is AccessRequestStatus {
@@ -58,89 +46,10 @@ function isValidDateTimeString(value: string): boolean {
   return Number.isFinite(Date.parse(value));
 }
 
-export function normalizeCreateAccessRequestRequestDto(
-  body: unknown,
-): CreateAccessRequestRequestDto {
-  const dto = (body ?? {}) as Partial<CreateAccessRequestRequestDto>;
-
-  return {
-    userId: normalizeUserId(dto.userId),
-    startDateTime:
-      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
-    endDateTime:
-      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
-    comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
-    status: normalizeStatus(dto.status),
-  };
-}
-
-export function normalizeUpdateAccessRequestRequestDto(
-  body: unknown,
-): UpdateAccessRequestRequestDto {
-  const dto = (body ?? {}) as Partial<UpdateAccessRequestRequestDto>;
-
-  return {
-    userId: normalizeUserId(dto.userId),
-    startDateTime:
-      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
-    endDateTime:
-      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
-    comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
-    status: normalizeStatus(dto.status),
-  };
-}
-
-export function normalizePatchAccessRequestRequestDto(
-  body: unknown,
-): PatchAccessRequestRequestDto {
-  const dto = (body ?? {}) as Partial<PatchAccessRequestRequestDto>;
-  const result: PatchAccessRequestRequestDto = {};
-
-  if ("userId" in dto) {
-    result.userId = normalizeUserId(dto.userId);
-  }
-
-  if ("startDateTime" in dto) {
-    result.startDateTime =
-      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "";
-  }
-
-  if ("endDateTime" in dto) {
-    result.endDateTime =
-      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "";
-  }
-
-  if ("comments" in dto) {
-    result.comments =
-      typeof dto.comments === "string" ? dto.comments.trim() : "";
-  }
-
-  if ("status" in dto) {
-    result.status =
-      typeof dto.status === "string"
-        ? (dto.status.trim().toLowerCase() as AccessRequestStatus)
-        : undefined;
-  }
-
-  if ("isDeleted" in dto) {
-    result.isDeleted =
-      typeof dto.isDeleted === "boolean" ? dto.isDeleted : undefined;
-  }
-
-  return result;
-}
-
-export function validateCreateAccessRequestRequestDto(
-  dto: CreateAccessRequestRequestDto,
+function validateAccessRequestFields(
+  dto: CreateAccessRequestRequestDto | UpdateAccessRequestRequestDto,
 ): AccessRequestValidationIssue[] {
   const errors: AccessRequestValidationIssue[] = [];
-
-  if (!Number.isInteger(dto.userId) || dto.userId <= 0) {
-    errors.push({
-      field: "userId",
-      message: "Некоректний userId.",
-    });
-  }
 
   if (dto.startDateTime === "") {
     errors.push({
@@ -209,26 +118,83 @@ export function validateCreateAccessRequestRequestDto(
   return errors;
 }
 
+export function normalizeCreateAccessRequestRequestDto(
+  body: unknown,
+): CreateAccessRequestRequestDto {
+  const dto = (body ?? {}) as Partial<CreateAccessRequestRequestDto>;
+
+  return {
+    startDateTime:
+      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
+    endDateTime:
+      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
+    comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
+    status: normalizeStatus(dto.status),
+  };
+}
+
+export function normalizeUpdateAccessRequestRequestDto(
+  body: unknown,
+): UpdateAccessRequestRequestDto {
+  const dto = (body ?? {}) as Partial<UpdateAccessRequestRequestDto>;
+
+  return {
+    startDateTime:
+      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "",
+    endDateTime:
+      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "",
+    comments: typeof dto.comments === "string" ? dto.comments.trim() : "",
+    status: normalizeStatus(dto.status),
+  };
+}
+
+export function normalizePatchAccessRequestRequestDto(
+  body: unknown,
+): PatchAccessRequestRequestDto {
+  const dto = (body ?? {}) as Partial<PatchAccessRequestRequestDto>;
+  const result: PatchAccessRequestRequestDto = {};
+
+  if ("startDateTime" in dto) {
+    result.startDateTime =
+      typeof dto.startDateTime === "string" ? dto.startDateTime.trim() : "";
+  }
+
+  if ("endDateTime" in dto) {
+    result.endDateTime =
+      typeof dto.endDateTime === "string" ? dto.endDateTime.trim() : "";
+  }
+
+  if ("comments" in dto) {
+    result.comments =
+      typeof dto.comments === "string" ? dto.comments.trim() : "";
+  }
+
+  if ("status" in dto) {
+    result.status =
+      typeof dto.status === "string"
+        ? (dto.status.trim().toLowerCase() as AccessRequestStatus)
+        : ("" as AccessRequestStatus);
+  }
+
+  return result;
+}
+
+export function validateCreateAccessRequestRequestDto(
+  dto: CreateAccessRequestRequestDto,
+): AccessRequestValidationIssue[] {
+  return validateAccessRequestFields(dto);
+}
+
 export function validateUpdateAccessRequestRequestDto(
   dto: UpdateAccessRequestRequestDto,
 ): AccessRequestValidationIssue[] {
-  return validateCreateAccessRequestRequestDto(dto);
+  return validateAccessRequestFields(dto);
 }
 
 export function validatePatchAccessRequestRequestDto(
   dto: PatchAccessRequestRequestDto,
 ): AccessRequestValidationIssue[] {
   const errors: AccessRequestValidationIssue[] = [];
-
-  if (
-    "userId" in dto &&
-    (!Number.isInteger(dto.userId) || (dto.userId ?? 0) <= 0)
-  ) {
-    errors.push({
-      field: "userId",
-      message: "Некоректний userId.",
-    });
-  }
 
   if ("startDateTime" in dto) {
     if (dto.startDateTime === "") {
@@ -279,13 +245,6 @@ export function validatePatchAccessRequestRequestDto(
     errors.push({
       field: "status",
       message: "Оберіть коректний статус заявки.",
-    });
-  }
-
-  if ("isDeleted" in dto && typeof dto.isDeleted !== "boolean") {
-    errors.push({
-      field: "isDeleted",
-      message: "Поле isDeleted має бути boolean.",
     });
   }
 

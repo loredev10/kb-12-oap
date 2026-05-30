@@ -93,10 +93,7 @@ export function normalizePatchApprovalRequestDto(
 
   if ("decision" in dto) {
     const normalizedDecision = normalizeDecision(dto.decision);
-    result.decision =
-      normalizedDecision === ""
-        ? undefined
-        : (normalizedDecision as ApprovalDecision);
+    result.decision = normalizedDecision as ApprovalDecision;
   }
 
   if ("comment" in dto) {
@@ -110,7 +107,9 @@ export function normalizePatchApprovalRequestDto(
 
   if ("isDeleted" in dto) {
     result.isDeleted =
-      typeof dto.isDeleted === "boolean" ? dto.isDeleted : undefined;
+      typeof dto.isDeleted === "boolean"
+        ? dto.isDeleted
+        : ("" as unknown as boolean);
   }
 
   return result;

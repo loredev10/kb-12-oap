@@ -2,29 +2,39 @@ import {
   createAccessRequest,
   deleteAccessRequest,
   getAccessRequests,
-  getUsers,
 } from "./apiClient";
+import { DEMO_USER_ID } from "./config";
 import type {
   AccessRequestResponseDto,
   ApiClientError,
   CreateAccessRequestRequestDto,
   EntityStatusFilter,
-  UserResponseDto,
 } from "./dtos";
 
 const formEl = document.querySelector<HTMLFormElement>("#accessRequestForm");
-const tableBodyEl = document.querySelector<HTMLTableSectionElement>("#accessRequestsTableBody");
+const tableBodyEl = document.querySelector<HTMLTableSectionElement>(
+  "#accessRequestsTableBody",
+);
 const emptyStateEl = document.querySelector<HTMLElement>("#emptyState");
+const currentDemoUserIdEl = document.querySelector<HTMLElement>(
+  "#currentDemoUserId",
+);
 
-const userIdInputEl = document.querySelector<HTMLSelectElement>("#userIdInput");
-const startDateTimeInputEl = document.querySelector<HTMLInputElement>("#startDateTimeInput");
-const endDateTimeInputEl = document.querySelector<HTMLInputElement>("#endDateTimeInput");
+const startDateTimeInputEl = document.querySelector<HTMLInputElement>(
+  "#startDateTimeInput",
+);
+const endDateTimeInputEl = document.querySelector<HTMLInputElement>(
+  "#endDateTimeInput",
+);
 const statusInputEl = document.querySelector<HTMLSelectElement>("#statusInput");
-const commentsInputEl = document.querySelector<HTMLTextAreaElement>("#commentsInput");
+const commentsInputEl =
+  document.querySelector<HTMLTextAreaElement>("#commentsInput");
 
-const userIdErrorEl = document.querySelector<HTMLElement>("#userIdError");
-const startDateTimeErrorEl = document.querySelector<HTMLElement>("#startDateTimeError");
-const endDateTimeErrorEl = document.querySelector<HTMLElement>("#endDateTimeError");
+const startDateTimeErrorEl = document.querySelector<HTMLElement>(
+  "#startDateTimeError",
+);
+const endDateTimeErrorEl =
+  document.querySelector<HTMLElement>("#endDateTimeError");
 const statusErrorEl = document.querySelector<HTMLElement>("#statusError");
 const commentsErrorEl = document.querySelector<HTMLElement>("#commentsError");
 
@@ -32,11 +42,11 @@ const submitBtnEl = document.querySelector<HTMLButtonElement>("#submitBtn");
 const resetBtnEl = document.querySelector<HTMLButtonElement>("#resetBtn");
 
 const searchInputEl = document.querySelector<HTMLInputElement>("#searchInput");
-const userFilterEl = document.querySelector<HTMLSelectElement>("#userFilter");
-const statusFilterGroupEl = document.querySelector<HTMLElement>("#statusFilterGroup");
-const clearFiltersBtnEl = document.querySelector<HTMLButtonElement>("#clearFiltersBtn");
+const statusFilterGroupEl =
+  document.querySelector<HTMLElement>("#statusFilterGroup");
+const clearFiltersBtnEl =
+  document.querySelector<HTMLButtonElement>("#clearFiltersBtn");
 
-let usersState: UserResponseDto[] = [];
 let requestsState: AccessRequestResponseDto[] = [];
 
 function setText(el: HTMLElement | null, text: string): void {
@@ -53,7 +63,6 @@ function showMessage(text: string): void {
 }
 
 function clearErrors(): void {
-  setText(userIdErrorEl, "");
   setText(startDateTimeErrorEl, "");
   setText(endDateTimeErrorEl, "");
   setText(statusErrorEl, "");
@@ -73,49 +82,8 @@ function getSelectedStatusFilter(): EntityStatusFilter {
   return "active";
 }
 
-function getUserNameById(userId: number): string {
-  const user = usersState.find((item) => item.id === userId);
-  return user?.fullName ?? String(userId);
-}
-
-function appendOption(
-  select: HTMLSelectElement,
-  value: string,
-  label: string,
-): void {
-  const option = document.createElement("option");
-  option.value = value;
-  option.textContent = label;
-  select.appendChild(option);
-}
-
-function fillUsersSelects(): void {
-  if (userIdInputEl) {
-    userIdInputEl.replaceChildren();
-    appendOption(userIdInputEl, "", "Оберіть користувача");
-  }
-
-  if (userFilterEl) {
-    userFilterEl.replaceChildren();
-    appendOption(userFilterEl, "", "Усі користувачі");
-  }
-
-  for (const user of usersState) {
-    const label = `${user.fullName} (${user.email})`;
-
-    if (userIdInputEl) {
-      appendOption(userIdInputEl, String(user.id), label);
-    }
-
-    if (userFilterEl) {
-      appendOption(userFilterEl, String(user.id), label);
-    }
-  }
-}
-
 function readForm(): CreateAccessRequestRequestDto {
   return {
-    userId: Number(userIdInputEl?.value ?? 0),
     startDateTime: startDateTimeInputEl?.value.trim() ?? "",
     endDateTime: endDateTimeInputEl?.value.trim() ?? "",
     status: (statusInputEl?.value ??
@@ -128,11 +96,6 @@ function validate(dto: CreateAccessRequestRequestDto): boolean {
   clearErrors();
 
   let isValid = true;
-
-  if (!Number.isFinite(dto.userId) || dto.userId <= 0) {
-    setText(userIdErrorEl, "Оберіть користувача.");
-    isValid = false;
-  }
 
   if (!dto.startDateTime) {
     setText(startDateTimeErrorEl, "Вкажіть початок доступу.");
@@ -181,17 +144,11 @@ function validate(dto: CreateAccessRequestRequestDto): boolean {
 
 function getVisibleRequests(): AccessRequestResponseDto[] {
   const search = searchInputEl?.value.trim().toLowerCase() ?? "";
-  const userIdFilter = userFilterEl?.value ?? "";
 
-  return requestsState.filter((request) => {
-    const matchesSearch =
-      !search || request.comments.toLowerCase().includes(search);
-
-    const matchesUser =
-      !userIdFilter || request.userId === Number(userIdFilter);
-
-    return matchesSearch && matchesUser;
-  });
+  return requestsState.filter(
+    (request) =>
+      !search || request.comments.toLowerCase().includes(search),
+  );
 }
 
 function createTextCell(value: string | number): HTMLTableCellElement {
@@ -234,7 +191,7 @@ function renderRequests(): void {
 
     tr.append(
       createTextCell(request.id),
-      createTextCell(getUserNameById(request.userId)),
+      createTextCell(request.userId),
       createTextCell(request.startDateTime),
       createTextCell(request.endDateTime),
       createTextCell(request.status),
@@ -244,11 +201,6 @@ function renderRequests(): void {
 
     tableBodyEl.appendChild(tr);
   }
-}
-
-async function loadUsersForSelects(): Promise<void> {
-  usersState = await getUsers("active");
-  fillUsersSelects();
 }
 
 async function loadRequests(): Promise<void> {
@@ -344,14 +296,12 @@ tableBodyEl?.addEventListener("click", async (event) => {
 });
 
 searchInputEl?.addEventListener("input", renderRequests);
-userFilterEl?.addEventListener("change", renderRequests);
 statusFilterGroupEl?.addEventListener("change", () => {
   void loadRequests();
 });
 
 clearFiltersBtnEl?.addEventListener("click", () => {
   if (searchInputEl) searchInputEl.value = "";
-  if (userFilterEl) userFilterEl.value = "";
 
   const activeRadio = document.querySelector<HTMLInputElement>(
     'input[name="statusFilter"][value="active"]',
@@ -365,13 +315,8 @@ clearFiltersBtnEl?.addEventListener("click", () => {
 });
 
 async function initPage(): Promise<void> {
-  try {
-    await loadUsersForSelects();
-    await loadRequests();
-  } catch (error) {
-    const apiError = error as ApiClientError;
-    showMessage(`Не вдалося завантажити сторінку: ${apiError.message}`);
-  }
+  setText(currentDemoUserIdEl, DEMO_USER_ID);
+  await loadRequests();
 }
 
 void initPage();

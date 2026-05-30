@@ -49,7 +49,6 @@ export interface AccessRequestWithUserResponseDto {
 }
 
 export interface CreateAccessRequestRequestDto {
-  userId: number;
   startDateTime: string;
   endDateTime: string;
   comments: string;
@@ -57,7 +56,6 @@ export interface CreateAccessRequestRequestDto {
 }
 
 export interface UpdateAccessRequestRequestDto {
-  userId: number;
   startDateTime: string;
   endDateTime: string;
   comments: string;

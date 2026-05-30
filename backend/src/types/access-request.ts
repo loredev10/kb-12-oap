@@ -11,7 +11,6 @@ export type AccessRequest = {
 };
 
 export type CreateAccessRequestRequestDto = {
-  userId: number;
   startDateTime: string;
   endDateTime: string;
   comments: string;
@@ -19,7 +18,6 @@ export type CreateAccessRequestRequestDto = {
 };
 
 export type UpdateAccessRequestRequestDto = {
-  userId: number;
   startDateTime: string;
   endDateTime: string;
   comments: string;
@@ -27,12 +25,10 @@ export type UpdateAccessRequestRequestDto = {
 };
 
 export type PatchAccessRequestRequestDto = {
-  userId?: number;
   startDateTime?: string;
   endDateTime?: string;
   comments?: string;
   status?: AccessRequestStatus;
-  isDeleted?: boolean;
 };
 
 export type AccessRequestResponseDto = {

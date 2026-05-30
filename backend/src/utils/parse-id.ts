@@ -1,6 +1,6 @@
 import { ApiError } from "../errors/api-error.js";
 
-export function parseId(rawId: string): number {
+export function parseId(rawId: string | undefined): number {
   const id = Number(rawId);
 
   if (!Number.isInteger(id) || id <= 0) {

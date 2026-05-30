@@ -10,7 +10,6 @@ Content-Type: application/json
 X-Demo-UserId: {{user1}}
 
 {
-  "userId": 1,
   "startDateTime": "2026-06-04T10:00",
   "endDateTime": "2026-06-04T11:00",
   "comments": "<strong id=\"lab5-xss-marker\">LAB5-XSS</strong>",

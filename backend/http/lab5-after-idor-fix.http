@@ -1,0 +1,93 @@
+@baseUrl = http://localhost:3000/api/v1
+@user1 = 1
+@user2 = 2
+
+### 1. Без X-Demo-UserId: немає контексту користувача
+GET {{baseUrl}}/access-requests/1
+
+### 2. Власник читає свою заявку: 200 OK
+GET {{baseUrl}}/access-requests/1
+X-Demo-UserId: {{user1}}
+
+### 3. IDOR після виправлення: чужа заявка не читається
+# Очікувано: 403 Forbidden.
+GET {{baseUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}
+
+### 4. IDOR після виправлення: чужа заявка не оновлюється через PUT
+# Очікувано: 403 Forbidden.
+PUT {{baseUrl}}/access-requests/2
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "startDateTime": "2026-06-05T12:00",
+  "endDateTime": "2026-06-05T14:00",
+  "comments": "Спроба змінити чужу заявку",
+  "status": "approved"
+}
+
+### 5. IDOR після виправлення: чужа заявка не оновлюється через PATCH
+# Очікувано: 403 Forbidden.
+PATCH {{baseUrl}}/access-requests/2
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "comments": "Спроба змінити чужу заявку через PATCH"
+}
+
+### 6. IDOR після виправлення: чужа заявка не видаляється
+# Очікувано: 403 Forbidden.
+DELETE {{baseUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}
+
+### 7. Власник створюється сервером, а не береться з body
+# Очікувано: 400 Bad Request з code=PROTECTED_FIELDS.
+POST {{baseUrl}}/access-requests
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "userId": 2,
+  "startDateTime": "2026-06-05T10:00",
+  "endDateTime": "2026-06-05T11:00",
+  "comments": "Клієнт не повинен призначати чужого власника",
+  "status": "pending"
+}
+
+### 8. Легітимне створення: сервер сам встановлює userId=1
+# Очікувано: 201 Created; у відповіді userId=1.
+POST {{baseUrl}}/access-requests
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "startDateTime": "2026-06-05T10:00",
+  "endDateTime": "2026-06-05T11:00",
+  "comments": "Легітимна заявка користувача 1",
+  "status": "pending"
+}
+
+### 9. Список обмежено поточним користувачем
+# У відповіді мають бути лише заявки userId=1.
+GET {{baseUrl}}/access-requests?status=all
+X-Demo-UserId: {{user1}}
+
+### 10. Пошук також обмежено поточним користувачем
+# У відповіді мають бути лише заявки userId=1.
+GET {{baseUrl}}/access-requests/search?q=
+X-Demo-UserId: {{user1}}
+
+### 11. JOIN-endpoint також обмежено поточним користувачем
+# У відповіді мають бути лише заявки userId=1.
+GET {{baseUrl}}/access-requests/with-users?status=all&limit=100
+X-Demo-UserId: {{user1}}
+
+### 12. Статистика також рахується лише для поточного користувача
+GET {{baseUrl}}/access-requests/stats/count?status=all
+X-Demo-UserId: {{user1}}
+
+### 13. Контроль: user 2 може прочитати власну заявку 2
+GET {{baseUrl}}/access-requests/2
+X-Demo-UserId: {{user2}}

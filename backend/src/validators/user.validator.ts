@@ -64,7 +64,9 @@ export function normalizePatchUserRequestDto(
 
   if ("role" in dto) {
     result.role =
-      typeof dto.role === "string" ? (dto.role.trim() as UserRole) : undefined;
+      typeof dto.role === "string"
+        ? (dto.role.trim() as UserRole)
+        : ("" as UserRole);
   }
 
   if ("notes" in dto) {
@@ -73,7 +75,9 @@ export function normalizePatchUserRequestDto(
 
   if ("isDeleted" in dto) {
     result.isDeleted =
-      typeof dto.isDeleted === "boolean" ? dto.isDeleted : undefined;
+      typeof dto.isDeleted === "boolean"
+        ? dto.isDeleted
+        : ("" as unknown as boolean);
   }
 
   return result;

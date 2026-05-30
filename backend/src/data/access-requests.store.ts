@@ -3,6 +3,7 @@ import type {
   AccessRequest,
   AccessRequestStatus,
 } from "../types/access-request.js";
+import type { EntityStatusFilter } from "../utils/status-filter.js";
 
 type AccessRequestRow = {
   id: number;
@@ -69,45 +70,51 @@ function mapAccessRequestWithUserRow(
   };
 }
 
-function buildIsDeletedWhereClause(status: "active" | "deleted" | "all"): string {
+function buildOwnerScopedWhereClause(
+  status: EntityStatusFilter,
+  tableAlias = "",
+): { whereClause: string; isDeletedParams: SqlParameter[] } {
+  const prefix = tableAlias ? `${tableAlias}.` : "";
+
   if (status === "deleted") {
-    return "WHERE ar.is_deleted = 1";
+    return {
+      whereClause: `WHERE ${prefix}user_id = ? AND ${prefix}is_deleted = ?`,
+      isDeletedParams: [1],
+    };
   }
 
   if (status === "all") {
-    return "";
+    return {
+      whereClause: `WHERE ${prefix}user_id = ?`,
+      isDeletedParams: [],
+    };
   }
 
-  return "WHERE ar.is_deleted = 0";
+  return {
+    whereClause: `WHERE ${prefix}user_id = ? AND ${prefix}is_deleted = ?`,
+    isDeletedParams: [0],
+  };
 }
 
-function buildIsDeletedWhereClauseForCount(
-  status: "active" | "deleted" | "all",
-): string {
-  if (status === "deleted") {
-    return "WHERE is_deleted = 1";
-  }
-
-  if (status === "all") {
-    return "";
-  }
-
-  return "WHERE is_deleted = 0";
-}
-
-export async function listAccessRequests(): Promise<AccessRequest[]> {
-  const rows = await all<AccessRequestRow>(`
-    SELECT
-      id,
-      user_id,
-      start_date_time,
-      end_date_time,
-      comments,
-      status,
-      is_deleted
-    FROM access_requests
-    ORDER BY id DESC;
-  `);
+export async function listAccessRequests(
+  ownerUserId: number,
+): Promise<AccessRequest[]> {
+  const rows = await all<AccessRequestRow>(
+    `
+      SELECT
+        id,
+        user_id,
+        start_date_time,
+        end_date_time,
+        comments,
+        status,
+        is_deleted
+      FROM access_requests
+      WHERE user_id = ?
+      ORDER BY id DESC;
+    `,
+    [ownerUserId],
+  );
 
   return rows.map(mapAccessRequestRow);
 }
@@ -174,27 +181,27 @@ export async function createAccessRequest(
 
 export async function replaceAccessRequest(
   item: AccessRequest,
+  ownerUserId: number,
 ): Promise<AccessRequest | undefined> {
   const result = await run(
     `
       UPDATE access_requests
       SET
-        user_id = ?,
         start_date_time = ?,
         end_date_time = ?,
         comments = ?,
         status = ?,
         is_deleted = ?
-      WHERE id = ?;
+      WHERE id = ? AND user_id = ?;
     `,
     [
-      item.userId,
       item.startDateTime,
       item.endDateTime,
       item.comments,
       item.status,
       item.isDeleted ? 1 : 0,
       item.id,
+      ownerUserId,
     ],
   );
 
@@ -205,42 +212,53 @@ export async function replaceAccessRequest(
   return findAccessRequestById(item.id);
 }
 
-export async function softDeleteAccessRequest(id: number): Promise<boolean> {
+export async function softDeleteAccessRequest(
+  id: number,
+  ownerUserId: number,
+): Promise<boolean> {
   const result = await run(
     `
       UPDATE access_requests
       SET is_deleted = 1
-      WHERE id = ? AND is_deleted = 0;
+      WHERE id = ? AND user_id = ? AND is_deleted = 0;
     `,
-    [id],
+    [id, ownerUserId],
   );
 
   return result.changes > 0;
 }
 
 export async function countAccessRequests(
-  status: "active" | "deleted" | "all",
+  status: EntityStatusFilter,
+  ownerUserId: number,
 ): Promise<number> {
-  const whereClause = buildIsDeletedWhereClauseForCount(status);
+  const { whereClause, isDeletedParams } = buildOwnerScopedWhereClause(status);
 
-  const row = await get<{ total: number }>(`
-    SELECT COUNT(*) AS total
-    FROM access_requests
-    ${whereClause};
-  `);
+  const row = await get<{ total: number }>(
+    `
+      SELECT COUNT(*) AS total
+      FROM access_requests
+      ${whereClause};
+    `,
+    [ownerUserId, ...isDeletedParams],
+  );
 
   return Number(row?.total ?? 0);
 }
 
 export async function listAccessRequestsWithUsers(
-  status: "active" | "deleted" | "all",
+  status: EntityStatusFilter,
   limit: number,
+  ownerUserId: number,
 ): Promise<AccessRequestWithUser[]> {
   const safeLimit = Number.isFinite(limit)
     ? Math.min(Math.max(Math.trunc(limit), 1), 100)
     : 10;
 
-  const whereClause = buildIsDeletedWhereClause(status);
+  const { whereClause, isDeletedParams } = buildOwnerScopedWhereClause(
+    status,
+    "ar",
+  );
 
   const rows = await all<AccessRequestWithUserRow>(
     `
@@ -261,7 +279,7 @@ export async function listAccessRequestsWithUsers(
       ORDER BY ar.id DESC
       LIMIT ?;
     `,
-    [safeLimit],
+    [ownerUserId, ...isDeletedParams, safeLimit],
   );
 
   return rows.map(mapAccessRequestWithUserRow);
@@ -276,6 +294,7 @@ function logSql(sql: string, params: SqlParameter[]): void {
 
 export async function searchAccessRequestsByComment(
   query: string,
+  ownerUserId: number,
 ): Promise<AccessRequest[]> {
   const sql = `
     SELECT
@@ -287,13 +306,14 @@ export async function searchAccessRequestsByComment(
       status,
       is_deleted
     FROM access_requests
-    WHERE comments LIKE ?
+    WHERE user_id = ?
+      AND comments LIKE ?
       AND is_deleted = 0
     ORDER BY id DESC
     LIMIT 20;
   `;
 
-  const params = [`%${query}%`];
+  const params = [ownerUserId, `%${query}%`];
 
   logSql(sql, params);
 

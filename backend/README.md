@@ -477,3 +477,29 @@ The same approach is used for `SELECT`, `INSERT`, `UPDATE`, soft-delete operatio
 Repeatable requests for the fixed SQLi scenario are stored in:
 
 - `backend/http/lab5-after-sqli-fix.http`
+
+## Broken Access Control / IDOR protection for Lab 5
+
+Access requests are personal resources. The backend identifies the current demo user through:
+
+```http
+X-Demo-UserId: 1
+```
+
+The header is an educational substitute for a real login/session mechanism. Authorization is still enforced on the backend:
+
+- `GET /api/v1/access-requests/:id` checks that the current user owns the request;
+- `PUT /api/v1/access-requests/:id` checks the owner before updating;
+- `PATCH /api/v1/access-requests/:id` checks the owner before updating;
+- `DELETE /api/v1/access-requests/:id` checks the owner before soft delete;
+- list, search, statistics, and JOIN endpoints return only the current user's access requests.
+
+The `userId` and `isDeleted` fields are server-managed fields. They are not accepted from request bodies. When creating a request, the owner is taken from `req.currentUser.id` rather than from client input.
+
+The shared authorization helper is located in:
+
+- `backend/src/security/access-request-access.ts`
+
+The repeatable requests for the protected IDOR scenario are stored in:
+
+- `backend/http/lab5-after-idor-fix.http`
