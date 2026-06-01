@@ -503,3 +503,63 @@ The shared authorization helper is located in:
 The repeatable requests for the protected IDOR scenario are stored in:
 
 - `backend/http/lab5-after-idor-fix.http`
+
+## Security Misconfiguration hardening for Lab 5
+
+The backend applies a small global hardening middleware before API routes and static files:
+
+```http
+X-Content-Type-Options: nosniff
+X-Frame-Options: DENY
+Referrer-Policy: no-referrer
+Permissions-Policy: camera=(), microphone=(), geolocation=()
+```
+
+Express fingerprinting through `X-Powered-By` is disabled:
+
+```ts
+app.disable("x-powered-by");
+```
+
+CORS is restricted to explicitly allowed frontend origins. The default local origin is:
+
+```text
+http://127.0.0.1:5500
+```
+
+Additional local origins can be supplied as a comma-separated environment variable:
+
+```bash
+FRONTEND_ORIGINS=http://127.0.0.1:5500,http://localhost:5500 pnpm dev
+```
+
+The API does not expose stack traces or raw internal error messages to clients. Unexpected errors are logged server-side and returned in the stable public format:
+
+```json
+{
+  "error": {
+    "code": "INTERNAL_SERVER_ERROR",
+    "message": "Внутрішня помилка сервера.",
+    "details": null
+  }
+}
+```
+
+The educational endpoint `GET /api/v1/debug/500` is available only outside production mode. In production it is not registered and returns `404 Not Found`:
+
+```bash
+NODE_ENV=production pnpm dev
+```
+
+Useful manual checks:
+
+```bash
+curl -i http://localhost:3000/health
+curl -i -H "Origin: http://127.0.0.1:5500" http://localhost:3000/health
+curl -i -H "Origin: https://example.invalid" http://localhost:3000/health
+curl -i http://localhost:3000/api/v1/debug/500
+```
+
+Repeatable requests for this scenario are stored in:
+
+- `backend/http/lab5-after-misconfiguration-fix.http`

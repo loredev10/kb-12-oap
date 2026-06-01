@@ -45,3 +45,12 @@ X-Demo-UserId: {{user1}}
 # Payload після URL-декодування: ' OR 1=1 --
 GET {{baseUrl}}/access-requests/search?q=%27%20OR%201%3D1%20--%20
 X-Demo-UserId: {{user1}}
+
+### 8. Misconfiguration до виправлення: відсутні базові security headers
+# До hardening у відповіді немає X-Content-Type-Options, X-Frame-Options і Referrer-Policy.
+# Express також повертає зайвий заголовок X-Powered-By: Express.
+GET http://localhost:3000/health
+
+### 9. Misconfiguration до виправлення: debug-endpoint доступний незалежно від NODE_ENV
+# До hardening маршрут існує навіть при NODE_ENV=production.
+GET {{baseUrl}}/debug/500

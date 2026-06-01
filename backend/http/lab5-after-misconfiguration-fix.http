@@ -1,0 +1,33 @@
+@healthUrl = http://localhost:3000/health
+@apiUrl = http://localhost:3000/api/v1
+@allowedOrigin = http://127.0.0.1:5500
+@blockedOrigin = https://example.invalid
+
+### 1. Базові security headers присутні у відповіді
+# Очікувано:
+# X-Content-Type-Options: nosniff
+# X-Frame-Options: DENY
+# Referrer-Policy: no-referrer
+# Permissions-Policy: camera=(), microphone=(), geolocation=()
+# Заголовок X-Powered-By відсутній.
+GET {{healthUrl}}
+
+### 2. CORS: дозволений frontend origin отримує Access-Control-Allow-Origin
+# Очікувано: Access-Control-Allow-Origin: http://127.0.0.1:5500
+GET {{healthUrl}}
+Origin: {{allowedOrigin}}
+
+### 3. CORS: сторонній origin не отримує дозвіл
+# Очікувано: Access-Control-Allow-Origin відсутній.
+GET {{healthUrl}}
+Origin: {{blockedOrigin}}
+
+### 4. Development mode: debug-endpoint повертає стриману помилку
+# Запустіть backend звичайною командою: pnpm dev:backend
+# Очікувано: 500 із code=INTERNAL_SERVER_ERROR без stack trace та внутрішнього тексту винятку.
+GET {{apiUrl}}/debug/500
+
+### 5. Production mode: debug-endpoint узагалі недоступний
+# Перезапустіть backend: NODE_ENV=production pnpm dev:backend
+# Очікувано: 404 із code=NOT_FOUND.
+GET {{apiUrl}}/debug/500
