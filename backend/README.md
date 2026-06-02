@@ -145,7 +145,7 @@ Fields:
 - `email` — `NOT NULL`
 - `email` — `UNIQUE`
 - `role` — `NOT NULL`
-- `role` — `CHECK (role IN ('student', 'teacher', 'lab_assistant'))`
+- `role` — `CHECK (role IN ('student', 'teacher', 'lab_assistant', 'admin'))`
 - `notes` — `NOT NULL DEFAULT ''`
 - `is_deleted` — `NOT NULL DEFAULT 0`
 - `is_deleted` — `CHECK (is_deleted IN (0, 1))`
@@ -175,7 +175,7 @@ Fields:
 - `FOREIGN KEY (access_request_id) REFERENCES access_requests(id) ON DELETE RESTRICT`
 - `FOREIGN KEY (approved_by_user_id) REFERENCES users(id) ON DELETE RESTRICT`
 
-## Demo user identification for Lab 5
+## Demo user identification and authorization for Lab 5
 
 Access-request endpoints require the educational header:
 
@@ -185,38 +185,43 @@ X-Demo-UserId: 1
 
 The backend verifies that the header contains a positive integer and that the user exists and is not deleted. Missing, invalid, or unknown demo users receive `401 Unauthorized`.
 
-At this intermediate stage, the current user is identified, but ownership checks are intentionally not implemented yet. This keeps the local IDOR scenario reproducible before the security fix. Repeatable requests are stored in:
+`AccessRequests` are personal resources. Authorization is enforced on the backend: list, search, stats, JOIN, read, update, and delete operations are restricted to the current user. The client cannot assign `userId` or `isDeleted` through the request body.
 
-- `backend/http/lab5-before-fixes.http`
+This header is intentionally a simplified educational substitute for a real login/session mechanism.
+
+Final repeatable checks are stored in:
+
+- `backend/http/lab5-security-regression.http`
+- `backend/scripts/lab5-security-regression.sh`
 
 ## API
 
 ### Users
 
-- `GET /api/users` — get user list
-- `GET /api/users/:id` — get user by id
-- `POST /api/users` — create user
-- `PUT /api/users/:id` — replace user
-- `PATCH /api/users/:id` — partially update user
-- `DELETE /api/users/:id` — soft delete user
+- `GET /api/v1/users` — get user list
+- `GET /api/v1/users/:id` — get user by id
+- `POST /api/v1/users` — create user
+- `PUT /api/v1/users/:id` — replace user
+- `PATCH /api/v1/users/:id` — partially update user
+- `DELETE /api/v1/users/:id` — soft delete user
 
 ### Access Requests
 
-- `GET /api/access-requests` — get access request list
-- `GET /api/access-requests/:id` — get access request by id
-- `POST /api/access-requests` — create access request
-- `PUT /api/access-requests/:id` — replace access request
-- `PATCH /api/access-requests/:id` — partially update access request
-- `DELETE /api/access-requests/:id` — soft delete access request
+- `GET /api/v1/access-requests` — get access request list
+- `GET /api/v1/access-requests/:id` — get access request by id
+- `POST /api/v1/access-requests` — create access request
+- `PUT /api/v1/access-requests/:id` — replace access request
+- `PATCH /api/v1/access-requests/:id` — partially update access request
+- `DELETE /api/v1/access-requests/:id` — soft delete access request
 
 ### Approvals
 
-- `GET /api/approvals` — get approval list
-- `GET /api/approvals/:id` — get approval by id
-- `POST /api/approvals` — create approval
-- `PUT /api/approvals/:id` — replace approval
-- `PATCH /api/approvals/:id` — partially update approval
-- `DELETE /api/approvals/:id` — soft delete approval
+- `GET /api/v1/approvals` — get approval list
+- `GET /api/v1/approvals/:id` — get approval by id
+- `POST /api/v1/approvals` — create approval
+- `PUT /api/v1/approvals/:id` — replace approval
+- `PATCH /api/v1/approvals/:id` — partially update approval
+- `DELETE /api/v1/approvals/:id` — soft delete approval
 
 ### Access Requests analytics and joined data
 
@@ -233,7 +238,8 @@ Available query param:
 Example:
 
 ```bash
-curl -i "http://localhost:3000/api/access-requests/stats/count?status=active"
+curl -i "http://localhost:3000/api/v1/access-requests/stats/count?status=active" \
+  -H "X-Demo-UserId: 1"
 ```
 
 Example response:
@@ -264,7 +270,8 @@ Available query params:
 Example:
 
 ```bash
-curl -i "http://localhost:3000/api/access-requests/with-users?status=active&limit=10"
+curl -i "http://localhost:3000/api/v1/access-requests/with-users?status=active&limit=10" \
+  -H "X-Demo-UserId: 1"
 ```
 
 Example response:
@@ -273,16 +280,16 @@ Example response:
 {
   "items": [
     {
-      "id": 3,
-      "userId": 2,
-      "startDateTime": "2026-03-20T09:00",
-      "endDateTime": "2026-03-20T12:00",
-      "comments": "Практична робота в лабораторії",
+      "id": 1,
+      "userId": 1,
+      "startDateTime": "2026-03-18T09:00",
+      "endDateTime": "2026-03-18T11:00",
+      "comments": "Практична робота з мережевих технологій",
       "status": "pending",
       "isDeleted": false,
-      "userFullName": "Олена Петренко",
-      "userEmail": "olena.petrenko@example.com",
-      "userRole": "teacher"
+      "userFullName": "Павло Іваненко",
+      "userEmail": "pavlo.ivanenko@example.com",
+      "userRole": "student"
     }
   ],
   "meta": {
@@ -310,25 +317,25 @@ curl -i http://localhost:3000/health
 ### 2. Get active users
 
 ```bash
-curl -i "http://localhost:3000/api/users?status=active"
+curl -i "http://localhost:3000/api/v1/users?status=active"
 ```
 
 ### 3. Get all users
 
 ```bash
-curl -i "http://localhost:3000/api/users?status=all"
+curl -i "http://localhost:3000/api/v1/users?status=all"
 ```
 
 ### 4. Get user by id
 
 ```bash
-curl -i http://localhost:3000/api/users/1
+curl -i http://localhost:3000/api/v1/users/1
 ```
 
 ### 5. Create a new user
 
 ```bash
-curl -i -X POST http://localhost:3000/api/users \
+curl -i -X POST http://localhost:3000/api/v1/users \
   -H "Content-Type: application/json" \
   -d "{\"fullName\":\"Ірина Мельник\",\"email\":\"iryna.melnyk@example.com\",\"role\":\"student\",\"notes\":\"Потрібен доступ до лабораторії\"}"
 ```
@@ -336,7 +343,7 @@ curl -i -X POST http://localhost:3000/api/users \
 ### 6. Try to create an invalid user (`400 Bad Request`)
 
 ```bash
-curl -i -X POST http://localhost:3000/api/users \
+curl -i -X POST http://localhost:3000/api/v1/users \
   -H "Content-Type: application/json" \
   -d "{\"fullName\":\"\",\"email\":\"bad-email\",\"role\":\"\",\"notes\":\"12\"}"
 ```
@@ -344,7 +351,7 @@ curl -i -X POST http://localhost:3000/api/users \
 ### 7. Try to create a duplicate user (`409 Conflict`)
 
 ```bash
-curl -i -X POST http://localhost:3000/api/users \
+curl -i -X POST http://localhost:3000/api/v1/users \
   -H "Content-Type: application/json" \
   -d "{\"fullName\":\"Ірина Мельник\",\"email\":\"iryna.melnyk@example.com\",\"role\":\"student\",\"notes\":\"Duplicate email test\"}"
 ```
@@ -352,7 +359,7 @@ curl -i -X POST http://localhost:3000/api/users \
 ### 8. Partially update a user with `PATCH`
 
 ```bash
-curl -i -X PATCH http://localhost:3000/api/users/1 \
+curl -i -X PATCH http://localhost:3000/api/v1/users/1 \
   -H "Content-Type: application/json" \
   -d "{\"notes\":\"Оновлений коментар через PATCH\"}"
 ```
@@ -360,67 +367,77 @@ curl -i -X PATCH http://localhost:3000/api/users/1 \
 ### 9. Soft delete a user with `DELETE`
 
 ```bash
-curl -i -X DELETE http://localhost:3000/api/users/1
+curl -i -X DELETE http://localhost:3000/api/v1/users/1
 ```
 
 ### 10. Get deleted users
 
 ```bash
-curl -i "http://localhost:3000/api/users?status=deleted"
+curl -i "http://localhost:3000/api/v1/users?status=deleted"
 ```
 
-### 11. Get active access requests
+### 11. Get active access requests for demo user 1
 
 ```bash
-curl -i "http://localhost:3000/api/access-requests?status=active"
+curl -i "http://localhost:3000/api/v1/access-requests?status=active" \
+  -H "X-Demo-UserId: 1"
 ```
 
-### 12. Get all access requests
+### 12. Get all access requests for demo user 1
 
 ```bash
-curl -i "http://localhost:3000/api/access-requests?status=all"
+curl -i "http://localhost:3000/api/v1/access-requests?status=all" \
+  -H "X-Demo-UserId: 1"
 ```
 
-### 13. Get access request by id
+### 13. Get owned access request by id
 
 ```bash
-curl -i http://localhost:3000/api/access-requests/1
+curl -i http://localhost:3000/api/v1/access-requests/1 \
+  -H "X-Demo-UserId: 1"
 ```
 
 ### 14. Create a new access request
 
+The owner is taken from `X-Demo-UserId`, not from the JSON body.
+
 ```bash
-curl -i -X POST http://localhost:3000/api/access-requests \
+curl -i -X POST http://localhost:3000/api/v1/access-requests \
   -H "Content-Type: application/json" \
-  -d "{\"userId\":2,\"startDateTime\":\"2026-03-20T09:00\",\"endDateTime\":\"2026-03-20T12:00\",\"status\":\"pending\",\"comments\":\"Практична робота в лабораторії\"}"
+  -H "X-Demo-UserId: 1" \
+  -d '{"startDateTime":"2026-06-05T10:00","endDateTime":"2026-06-05T12:00","status":"pending","comments":"Практична робота в лабораторії"}'
 ```
 
-### 15. Try to create an invalid access request (`400 Bad Request`)
+### 15. Try to assign a foreign owner (`400 Bad Request`)
 
 ```bash
-curl -i -X POST http://localhost:3000/api/access-requests \
+curl -i -X POST http://localhost:3000/api/v1/access-requests \
   -H "Content-Type: application/json" \
-  -d "{\"userId\":2,\"startDateTime\":\"2026-03-20T09:00\",\"endDateTime\":\"2026-03-20T16:30\",\"status\":\"pending\",\"comments\":\"Занадто довгий доступ\"}"
+  -H "X-Demo-UserId: 1" \
+  -d '{"userId":2,"startDateTime":"2026-06-05T10:00","endDateTime":"2026-06-05T12:00","status":"pending","comments":"Protected owner field test"}'
 ```
 
-### 16. Partially update an access request with `PATCH`
+### 16. Partially update an owned access request with `PATCH`
 
 ```bash
-curl -i -X PATCH http://localhost:3000/api/access-requests/1 \
+curl -i -X PATCH http://localhost:3000/api/v1/access-requests/1 \
   -H "Content-Type: application/json" \
-  -d "{\"comments\":\"Оновлена заявка через PATCH\",\"status\":\"approved\"}"
+  -H "X-Demo-UserId: 1" \
+  -d '{"comments":"Оновлена заявка через PATCH","status":"approved"}'
 ```
 
-### 17. Soft delete an access request with `DELETE`
+### 17. Try to read a foreign access request (`403 Forbidden`)
 
 ```bash
-curl -i -X DELETE http://localhost:3000/api/access-requests/1
+curl -i http://localhost:3000/api/v1/access-requests/2 \
+  -H "X-Demo-UserId: 1"
 ```
 
-### 18. Get deleted access requests
+### 18. Soft delete an owned access request with `DELETE`
 
 ```bash
-curl -i "http://localhost:3000/api/access-requests?status=deleted"
+curl -i -X DELETE http://localhost:3000/api/v1/access-requests/1 \
+  -H "X-Demo-UserId: 1"
 ```
 
 ### SQL injection demonstration from Laboratory Work #3
@@ -563,3 +580,41 @@ curl -i http://localhost:3000/api/v1/debug/500
 Repeatable requests for this scenario are stored in:
 
 - `backend/http/lab5-after-misconfiguration-fix.http`
+
+
+## Final Lab 5 security regression
+
+The final combined HTTP scenario set is stored in:
+
+```text
+backend/http/lab5-security-regression.http
+```
+
+An automated curl-based subset is available from the repository root:
+
+```bash
+pnpm security:regression
+```
+
+Prerequisites:
+
+```bash
+pnpm seed:backend
+pnpm dev:backend
+```
+
+For a fully reproducible run without touching the usual local database, use a temporary SQLite file:
+
+```bash
+rm -f backend/data/lab5-regression.db*
+DB_PATH=data/lab5-regression.db pnpm seed:backend
+DB_PATH=data/lab5-regression.db pnpm dev:backend
+pnpm security:regression
+```
+
+The report draft and screenshot checklist are located in:
+
+```text
+docs/lab5/REPORT.md
+docs/lab5/screenshots/README.md
+```

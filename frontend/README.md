@@ -79,7 +79,7 @@ This page allows the user to:
 - view access requests from the backend;
 - create a new access request;
 - delete an access request;
-- filter requests by user;
+- view only the current demo user's requests;
 - search requests by comments;
 - switch between active / deleted / all records.
 
@@ -186,13 +186,20 @@ Create access request body example:
 
 ```json
 {
-  "userId": 1,
-  "startDateTime": "2026-05-15T10:00",
-  "endDateTime": "2026-05-15T12:00",
+  "startDateTime": "2026-06-05T10:00",
+  "endDateTime": "2026-06-05T12:00",
   "status": "pending",
   "comments": "Потрібен доступ для виконання практичної роботи"
 }
 ```
+
+The owner is not selected in the form and is not sent in the JSON body. The frontend adds the educational header:
+
+```http
+X-Demo-UserId: 1
+```
+
+The backend assigns the owner from the verified request context. The client cannot override `userId` or `isDeleted`.
 
 Allowed access request statuses:
 
@@ -431,3 +438,8 @@ This structure is intentionally simple and is suitable for Lab 4.
 До виправлення рядок, вставлений через `innerHTML`, інтерпретувався браузером
 як розмітка. Після виправлення користувацькі дані вставляються через
 `textContent`, тому маркер відображається буквально як текст разом із тегами.
+
+
+## ЛР5: демо-користувач і серверна авторизація
+
+Для навчальної демонстрації frontend передає `X-Demo-UserId`, значення якого визначене у `src/config.ts`. Заявки на сторінці обмежуються поточним демо-користувачем. Перевірка власника виконується на backend для читання, оновлення й видалення; приховування елементів UI не використовується як механізм безпеки.

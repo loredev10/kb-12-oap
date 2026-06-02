@@ -1,0 +1,122 @@
+@healthUrl = http://localhost:3000/health
+@apiUrl = http://localhost:3000/api/v1
+@allowedOrigin = http://127.0.0.1:5500
+@blockedOrigin = https://example.invalid
+@user1 = 1
+@user2 = 2
+
+### ЛР5 — фінальний security regression набір
+# Перед запуском:
+# 1. pnpm seed:backend
+# 2. pnpm dev:backend
+# 3. для XSS також pnpm dev:frontend
+#
+# Для повністю відтворюваної перевірки можна використати окрему чисту БД:
+# rm -f backend/data/lab5-regression.db*
+# DB_PATH=data/lab5-regression.db pnpm seed:backend
+# DB_PATH=data/lab5-regression.db pnpm dev:backend
+
+### A1. SQLi: звичайний пошук працює
+GET {{apiUrl}}/access-requests/search?q=заняття
+X-Demo-UserId: {{user1}}
+
+### A2. SQLi: payload більше не змінює структуру SQL
+# Очікувано: 200 OK і items=[]
+# Payload після URL-декодування: ' OR 1=1 --
+GET {{apiUrl}}/access-requests/search?q=%27%20OR%201%3D1%20--%20
+X-Demo-UserId: {{user1}}
+
+### Б1. Stored XSS: створити заявку з безпечним HTML-маркером
+# Після виконання відкрийте http://127.0.0.1:5500/access-requests.html
+# Очікувано: тег відображається буквально як текст.
+# У DevTools Console виконайте:
+# document.querySelector("#lab5-xss-marker")
+# Очікувано після виправлення: null
+POST {{apiUrl}}/access-requests
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "startDateTime": "2026-06-04T10:00",
+  "endDateTime": "2026-06-04T11:00",
+  "comments": "<strong id=\"lab5-xss-marker\">LAB5-XSS</strong>",
+  "status": "pending"
+}
+
+### В1. IDOR: без X-Demo-UserId немає контексту користувача
+# Очікувано: 401 Unauthorized
+GET {{apiUrl}}/access-requests/1
+
+### В2. IDOR: власник читає власну заявку
+# Очікувано: 200 OK
+GET {{apiUrl}}/access-requests/1
+X-Demo-UserId: {{user1}}
+
+### В3. IDOR: користувач 1 не читає заявку користувача 2
+# Очікувано: 403 Forbidden
+GET {{apiUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}
+
+### В4. IDOR: користувач 1 не оновлює заявку користувача 2
+# Очікувано: 403 Forbidden
+PATCH {{apiUrl}}/access-requests/2
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "comments": "Спроба змінити чужу заявку"
+}
+
+### В5. IDOR: користувач 1 не видаляє заявку користувача 2
+# Очікувано: 403 Forbidden
+DELETE {{apiUrl}}/access-requests/2
+X-Demo-UserId: {{user1}}
+
+### В6. Власник визначається сервером, а не body
+# Очікувано: 400 Bad Request, code=PROTECTED_FIELDS
+POST {{apiUrl}}/access-requests
+Content-Type: application/json
+X-Demo-UserId: {{user1}}
+
+{
+  "userId": 2,
+  "startDateTime": "2026-06-05T10:00",
+  "endDateTime": "2026-06-05T11:00",
+  "comments": "Клієнт не повинен призначати чужого власника",
+  "status": "pending"
+}
+
+### В7. Контроль: user 2 читає власну заявку 2
+# Очікувано: 200 OK
+GET {{apiUrl}}/access-requests/2
+X-Demo-UserId: {{user2}}
+
+### Г1. Security headers присутні, X-Powered-By відсутній
+# Очікувано:
+# X-Content-Type-Options: nosniff
+# X-Frame-Options: DENY
+# Referrer-Policy: no-referrer
+# Permissions-Policy: camera=(), microphone=(), geolocation=()
+# X-Powered-By відсутній
+GET {{healthUrl}}
+
+### Г2. CORS: дозволений frontend origin отримує дозвіл
+# Очікувано: Access-Control-Allow-Origin: http://127.0.0.1:5500
+GET {{healthUrl}}
+Origin: {{allowedOrigin}}
+
+### Г3. CORS: сторонній origin не отримує дозвіл
+# Очікувано: Access-Control-Allow-Origin відсутній
+GET {{healthUrl}}
+Origin: {{blockedOrigin}}
+
+### Г4. Development: клієнт не бачить внутрішні деталі 500
+# Запустіть backend звичайно: pnpm dev:backend
+# Очікувано: 500, code=INTERNAL_SERVER_ERROR, без stack trace
+GET {{apiUrl}}/debug/500
+
+### Г5. Production: debug endpoint відсутній
+# Перезапустіть backend:
+# NODE_ENV=production pnpm dev:backend
+# Очікувано: 404, code=NOT_FOUND
+GET {{apiUrl}}/debug/500

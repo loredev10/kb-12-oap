@@ -27,6 +27,7 @@
     "format:check:frontend": "pnpm --filter @kb-12/frontend format:check",
 
     "format:fix:backend": "pnpm --filter @kb-12/backend format:fix",
-    "format:fix:frontend": "pnpm --filter @kb-12/frontend format:fix"
+    "format:fix:frontend": "pnpm --filter @kb-12/frontend format:fix",
+    "security:regression": "pnpm --filter @kb-12/backend security:regression"
   }
 }

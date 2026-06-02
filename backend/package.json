@@ -18,7 +18,8 @@
     "lint:check": "eslint .",
     "lint:fix": "eslint --fix .",
     "format:check": "prettier --check .",
-    "format:fix": "prettier --write ."
+    "format:fix": "prettier --write .",
+    "security:regression": "bash scripts/lab5-security-regression.sh"
   },
   "dependencies": {
     "cors": "^2.8.6",
